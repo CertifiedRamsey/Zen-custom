@@ -3,7 +3,8 @@
  *
  * With Zia (Sine) on, Zia draws these itself: a bright gradient edge round
  * each tile and the open tab, a dark fill under the open tab, a glow round
- * it and a dark ring inside the open Essential. Its sheet loads after this
+ * it and a dark ring inside the open Essential. The glow is left to Zia
+ * (its zia.tabs.no-glow and zia.tabs.favicon-glow settings). Its sheet loads after this
  * one, so instead of fighting its rules this points Zia's own settings
  * (--zia-*) at the soft look, and the two things those settings don't
  * reach carry an id (#zc) to outrank Zia. Without Zia the --zia-* lines do
@@ -21,14 +22,6 @@
     --zia-essential-bg: var(--zc-tile-fill) !important;
     --zia-active-tab-bg: var(--zc-selected-fill) !important;
     --zia-active-tab-bg-folder: var(--zc-selected-fill) !important;
-    --zia-active-glow-color: transparent !important;
-  }
-
-  /* No glow round the open tab or split, Zia's favicon-tinted one included */
-  :root:not(#zc) .tabbrowser-tab:not([zen-essential])[visuallyselected] > .tab-stack > .tab-background,
-  :root:not(#zc) tab-group[split-view-group] > .tab-group-container {
-    box-shadow: none !important;
-    outline: none !important;
   }
 
   /* The open Essential: a hairline, not Zia's dark ring round its inner card */
