@@ -10,6 +10,7 @@
 @import url("modules/top-bar.css");
 @import url("modules/folder-icon.css");
 @import url("modules/tight-footer.css");
+@import url("modules/square-tiles.css");
 
 /* Extras, off by default */
 @import url("modules/compact-tabs.css");

@@ -1,0 +1,15 @@
+/* Square tiles: Essentials get small, crisp corners instead of Zen's
+ * big rounded squircle. Change --zc-tile-radius to taste. */
+@media -moz-pref("zen-custom.square-tiles") {
+  .tabbrowser-tab[zen-essential="true"] {
+    --zc-tile-radius: 4px;
+    --border-radius-medium: var(--zc-tile-radius) !important;
+
+    & .tab-background,
+    & .tab-background::before,
+    & .tab-background::after {
+      border-radius: var(--zc-tile-radius) !important;
+      corner-shape: round !important;
+    }
+  }
+}
