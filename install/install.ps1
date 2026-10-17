@@ -156,3 +156,4 @@ $keep += 'user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true)
 [IO.File]::WriteAllText($uj, ($keep -join "`r`n") + "`r`n", $utf8)
 
 Write-Host "Done. Open Zen to see the changes." -ForegroundColor Green
+Write-Host "Once it looks right, run: powershell -ExecutionPolicy Bypass -File .\install\check.ps1 -MarkGood"

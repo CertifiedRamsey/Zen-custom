@@ -77,6 +77,19 @@ To remove it: close Zen, then
 Have more than one Zen profile? The installer picks the one you opened last
 and prints the others; add `-ProfilePath "<folder>"` to choose.
 
+## When something breaks
+
+After a Zen or mod update, if something looks wrong, run the health check
+from the repo folder (safe with Zen open; it only reads):
+```powershell
+powershell -ExecutionPolicy Bypass -File .\install\check.ps1
+```
+It checks every piece of zen-custom is still wired up, says how to fix
+anything that isn't, and lists which Zen or mod versions changed since it
+last worked. The report is copied to the clipboard: paste it to Claude.
+Once everything looks right, run it once with `-MarkGood` so later checks
+know what "working" looked like.
+
 ## Layout
 
 ```
@@ -85,5 +98,5 @@ chrome/zen-custom/modules/*.css    one file per feature
 chrome/zen-custom/userContent.css  styles for web/about: pages
 js/*.uc.js                         behaviour features (installed as a local Sine mod)
 user.js                            default on/off switches (added to prefs.js when missing)
-install/                           Windows installer and uninstaller
+install/                           Windows installer, uninstaller and health check
 ```
