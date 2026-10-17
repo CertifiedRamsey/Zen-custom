@@ -14,6 +14,7 @@
 @import url("modules/square-tiles.css");
 @import url("modules/container-dot.css");
 @import url("modules/smooth-topbar.css");
+@import url("modules/steady-sidebar.css");
 
 /* Extras, off by default */
 @import url("modules/compact-tabs.css");

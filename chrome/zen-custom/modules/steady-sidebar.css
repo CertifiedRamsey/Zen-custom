@@ -1,0 +1,26 @@
+/* Steady sidebar: stops the compact-mode sidebar sliding away and back
+ * while the mouse rests on its top row of buttons.
+ *
+ * Cause (17 Oct 21:00 recording): Zen's top row (#zen-sidebar-top-buttons)
+ * is a XUL <toolbar>, and Firefox makes every toolbar a "drag the window"
+ * area (toolkit xul.css). Only the buttons themselves are exempt, so the
+ * padding around ⋯ and the gaps between buttons (wider since top-bar.css
+ * spreads them out) are drag area. On Windows, hovering a drag area makes
+ * Firefox think the mouse left the window (bug 1979340, Zen issue 7746),
+ * so compact mode hides the sidebar, the mouse lands on the page, the edge
+ * hover shows it again: a slide-out/slide-in loop. Zia's space-name slot
+ * in the same row is a drag area too.
+ *
+ * Fix: in compact mode only, make the whole floating sidebar a normal area.
+ * Trade-off: in compact mode you can't drag the window from the sidebar
+ * (Win+arrow keys still move/snap it). Outside compact mode nothing changes.
+ *
+ * Pref: zen-custom.steady-sidebar (flip off in about:config to compare). */
+@media -moz-pref("zen-custom.steady-sidebar") {
+  :root:not(#zc)[zen-compact-mode="true"]:not([customizing]) {
+    & #navigator-toolbox,
+    & #navigator-toolbox :is(toolbar, #zia-workspace-slot, .zen-workspace-empty-space, #titlebar) {
+      -moz-window-dragging: no-drag !important;
+    }
+  }
+}

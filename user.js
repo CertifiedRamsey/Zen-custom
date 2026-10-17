@@ -14,6 +14,7 @@ user_pref("zen-custom.square-tiles", true);
 user_pref("zen-custom.container-dot", true);
 user_pref("zen-custom.hide-container-bar", true);
 user_pref("zen-custom.smooth-topbar", true);
+user_pref("zen-custom.steady-sidebar", true);
 user_pref("zen-custom.ctrl-tab", true);
 user_pref("zen-custom.ctrl-tab.delay", 200);
 user_pref("zen-custom.ctrl-tab.recent-order", false);

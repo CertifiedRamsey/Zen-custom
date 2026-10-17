@@ -12,7 +12,8 @@
  * Fix: make the bar a normal (non-drag) area, keep it above the page for
  * hit-testing, and switch height + margin in the same frame after the same
  * short delay, so the page never moves. Only the fade is animated.
- * Window still drags from the sidebar top and the empty tab area.
+ * Window still drags from the sidebar top and the empty tab area, except
+ * in compact mode, where steady-sidebar.css turns that off too.
  *
  * Zia (Sine) replaces the bar's transition with its own colour fade, which
  * is what made the bar's height snap while the page slid: its rule loads
