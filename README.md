@@ -30,7 +30,7 @@ Each one can be switched off live in `about:config`:
 | `zen-custom.hide-container-bar` | Hides the coloured container edge bar so the dot replaces it | on |
 | `zen-custom.smooth-topbar` | Stops the bookmarks bar flickering and the page jumping when you move the mouse to the top (window then drags from the sidebar top, not the bookmarks bar) | on |
 | `zen-custom.tab-monitor` | Shift+Esc (or Ctrl+Alt+M / toolbar button) opens a panel of tabs grouped by space with memory, CPU and awake/asleep state; one-click sleep per tab or space; Process Manager one click away (JS, needs Sine/fx-autoconfig) | on |
-| `zen-custom.ctrl-tab` | Ctrl+Tab skips sleeping tabs (hold Ctrl for a picker); Alt+Space opens a searchable tab picker. Tune with `zen-custom.ctrl-tab.delay` and `zen-custom.ctrl-tab.recent-order` (JS, needs Sine/fx-autoconfig) | on |
+| `zen-custom.ctrl-tab` | Ctrl+Tab skips sleeping tabs (hold Ctrl for a picker); Ctrl+Alt+Space opens a searchable tab picker. Tune with `zen-custom.ctrl-tab.delay` and `zen-custom.ctrl-tab.recent-order` (JS, needs Sine/fx-autoconfig) | on |
 | `zen-custom.compact-tabs` | Shorter, rounder vertical tabs | off |
 | `zen-custom.hover-close` | Close buttons only on the hovered tab | off |
 | `zen-custom.floating-urlbar` | Address bar opens as a centered command palette | off |

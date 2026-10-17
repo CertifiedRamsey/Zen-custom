@@ -15,5 +15,5 @@ fx-autoconfig, which Sine already installs. The installer copies them into
   Toggle: `zen-custom.tab-monitor`.
 - `ctrl-tab-switcher.uc.js`: Ctrl+Tab jumps between awake tabs in this space
   without waking sleeping ones; hold Ctrl for an Alt+Tab-style picker.
-  Alt+Space opens a stay-open picker with search across spaces.
+  Ctrl+Alt+Space opens a stay-open picker with search across spaces.
   Toggle: `zen-custom.ctrl-tab` (plus `.delay` and `.recent-order`).

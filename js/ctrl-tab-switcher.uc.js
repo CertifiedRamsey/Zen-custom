@@ -8,7 +8,7 @@
 // space (Essentials included). Sleeping tabs are skipped, so they never wake.
 // Keep holding Ctrl and a picker of awake tabs appears, like Windows Alt+Tab:
 // Tab or arrows to move, let go of Ctrl to open, Esc to cancel, click works too.
-// Alt+Space opens the picker so it stays open: search box, awake tabs from
+// Ctrl+Alt+Space opens the picker so it stays open: search box, awake tabs from
 // every space, and this space's sleeping tabs (dimmed, opening one wakes it).
 //
 // Prefs: zen-custom.ctrl-tab (on/off), zen-custom.ctrl-tab.delay (ms before
@@ -124,7 +124,7 @@
   overlay.append(h("style", { text: css }), box);
   (document.body || document.documentElement).append(overlay);
 
-  let mode = null;        // null, "hold" (Ctrl+Tab) or "sticky" (Alt+Space)
+  let mode = null;        // null, "hold" (Ctrl+Tab) or "sticky" (Ctrl+Alt+Space)
   let items = [];         // tabs in the order they can be selected
   let index = 0;
   let showTimer = null;
@@ -281,7 +281,7 @@
     box.replaceChildren(
       h("div", { class: "hint" },
         h("span", { text: "Arrows to move · Enter to open · Esc to close" }),
-        h("span", { text: "Alt+Space" })),
+        h("span", { text: "Ctrl+Alt+Space" })),
       search, h("div", { class: "list" }));
     show();
     search.focus();
@@ -293,8 +293,7 @@
   window.addEventListener("keydown", e => {
     if (e.timeStamp === lastStamp) return; // the same key event coming back from the page
     const tabKey = e.key === "Tab" && e.ctrlKey && !e.altKey && !e.metaKey;
-    // Alt+Space normally opens the Windows window menu; eating the keydown stops that.
-    const stickyKey = e.code === "Space" && e.altKey && !e.ctrlKey && !e.shiftKey && !e.metaKey;
+    const stickyKey = e.code === "Space" && e.ctrlKey && e.altKey && !e.shiftKey && !e.metaKey;
     if (!mode && !tabKey && !stickyKey) return;
     lastStamp = e.timeStamp;
 
