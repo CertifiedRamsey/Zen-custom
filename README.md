@@ -19,14 +19,17 @@ Zen Mods and Sine mods that kept overriding each other.
 
 Each one can be switched off live in `about:config`:
 
-| Pref | What it does |
-| --- | --- |
-| `zen-custom.compact-tabs` | Shorter, rounder vertical tabs |
-| `zen-custom.hover-close` | Close buttons only on the hovered tab |
-| `zen-custom.floating-urlbar` | Address bar opens as a centered command palette |
-| `zen-custom.clean-toolbar` | Hides rarely used URL bar icons |
-| `zen-custom.essentials-grid` | Tidier Essentials with an accent ring on the active one |
-| `zen-custom.clean-newtab` | Removes sponsored and news blocks from the new tab page |
+| Pref | What it does | Default |
+| --- | --- | --- |
+| `zen-custom.soft-tiles` | Faint hairline instead of dark outlines on Essentials and the selected tab (edge colour bar kept) | on |
+| `zen-custom.top-bar` | ⋯ menu first, all buttons spread across the top bar, no » overflow | on |
+| `zen-custom.folder-icon` | Outline folder icon in the folder's colour, animation kept | on |
+| `zen-custom.tight-footer` | Space icons sit right next to the library button | on |
+| `zen-custom.compact-tabs` | Shorter, rounder vertical tabs | off |
+| `zen-custom.hover-close` | Close buttons only on the hovered tab | off |
+| `zen-custom.floating-urlbar` | Address bar opens as a centered command palette | off |
+| `zen-custom.clean-toolbar` | Hides rarely used URL bar icons | off |
+| `zen-custom.clean-newtab` | Removes sponsored and news blocks from the new tab page | off |
 
 Colors, radius and spacing live in `chrome/zen-custom/modules/tokens.css`.
 

@@ -1,11 +1,18 @@
 /* zen-custom: one codebase for all of Thato's Zen tweaks.
  * Every feature lives in its own module and has an on/off switch in
  * about:config (prefs start with "zen-custom."). Defaults are in user.js.
- * Load order below is the ONLY order — no more mods fighting each other. */
+ * Load order below is the ONLY order, so no more mods fighting each other. */
 
 @import url("modules/tokens.css");
+
+/* Thato's requests */
+@import url("modules/soft-tiles.css");
+@import url("modules/top-bar.css");
+@import url("modules/folder-icon.css");
+@import url("modules/tight-footer.css");
+
+/* Extras, off by default */
 @import url("modules/compact-tabs.css");
 @import url("modules/hover-close.css");
 @import url("modules/floating-urlbar.css");
 @import url("modules/clean-toolbar.css");
-@import url("modules/essentials-grid.css");

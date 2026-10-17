@@ -1,0 +1,11 @@
+/* Tight footer: space icons sit right next to the library button
+ * instead of floating in the middle. The + stays on the far right. */
+@media -moz-pref("zen-custom.tight-footer") {
+  #zen-sidebar-foot-buttons #zen-workspaces-button {
+    justify-content: flex-start !important;
+    width: auto !important;
+    flex: 1 1 auto;
+    gap: 2px !important;
+    margin-inline-start: 2px !important;
+  }
+}

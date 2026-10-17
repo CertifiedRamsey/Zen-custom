@@ -1,0 +1,26 @@
+/* Folder icon: turn Zen's filled 3D folder into a clean outline drawn in
+ * the folder's colour. Only colours change, so the open/close animation,
+ * custom icons and icon-only mode keep working. */
+@media -moz-pref("zen-custom.folder-icon") {
+  zen-folder .tab-group-folder-icon svg {
+    filter: none !important;
+
+    & .back {
+      fill: none !important;
+      stroke: var(--zen-folder-stroke) !important;
+      stroke-width: 1.5px !important;
+    }
+    & .front {
+      fill: color-mix(in srgb, var(--zen-folder-stroke) 18%, transparent) !important;
+      fill-opacity: 1 !important;
+      stroke: var(--zen-folder-stroke) !important;
+      stroke-width: 1.5px !important;
+    }
+    /* Zen draws each shape twice (fill layer + stroke layer); hide the
+     * solid fill layer so only the outline remains. */
+    & .back:not([style*="stroke"]),
+    & .front:not([style*="stroke"]) {
+      opacity: 0 !important;
+    }
+  }
+}

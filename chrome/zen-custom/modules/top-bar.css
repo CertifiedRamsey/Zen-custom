@@ -1,0 +1,20 @@
+/* Top bar: ⋯ menu first, then every button spread evenly across.
+ * Zen puts a full-width separator in this bar, which is what pushed the
+ * buttons right, left the corner empty and sent five of them into the »
+ * overflow menu. Collapsing it lets them all fit. */
+@media -moz-pref("zen-custom.top-bar") {
+  #zen-sidebar-top-buttons-separator {
+    display: none !important;
+  }
+  #zen-sidebar-top-buttons-customization-target {
+    justify-content: space-between !important;
+    min-width: 0;
+  }
+  #zen-sidebar-top-buttons .toolbarbutton-1 {
+    --toolbarbutton-outer-padding: 1px !important;
+    --toolbarbutton-inner-padding: 6px !important;
+  }
+  #PanelUI-button {
+    order: -1;
+  }
+}

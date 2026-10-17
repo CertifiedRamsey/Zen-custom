@@ -1,0 +1,14 @@
+/* Soft tiles: replace the thick dark outlines on Essentials and the
+ * selected tab with a faint hairline. The coloured edge bar is left alone
+ * on purpose (it marks which silo you're in). */
+@media -moz-pref("zen-custom.soft-tiles") {
+  .tabbrowser-tab[zen-essential="true"] .tab-background {
+    border: 1px solid light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.08)) !important;
+    outline: none !important;
+  }
+  .tabbrowser-tab:not([zen-essential])[visuallyselected] .tab-background {
+    border-color: transparent !important;
+    outline: none !important;
+    background: light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.12)) !important;
+  }
+}
