@@ -18,6 +18,9 @@ user_pref("zen-custom.ctrl-tab", true);
 user_pref("zen-custom.ctrl-tab.delay", 200);
 user_pref("zen-custom.ctrl-tab.recent-order", false);
 user_pref("zen-custom.tab-monitor", true);
+// Zen setting: new tabs (Ctrl+T, +) open at the bottom of the space.
+// Also moves the + New Tab button to the bottom.
+user_pref("zen.view.show-newtab-button-top", false);
 
 // Extras, off until wanted
 user_pref("zen-custom.compact-tabs", false);

@@ -104,7 +104,8 @@ $prefsText = ""
 if (Test-Path $prefsJs) { $prefsText = [IO.File]::ReadAllText($prefsJs, [Text.Encoding]::UTF8) }
 $add = @()
 foreach ($line in [IO.File]::ReadAllLines((Join-Path $repo "user.js"), [Text.Encoding]::UTF8)) {
-  if ($line -match '^\s*user_pref\("(zen-custom\.[^"]+)"') {
+  # our own switches, plus the few Zen settings this repo chooses for you
+  if ($line -match '^\s*user_pref\("(zen-custom\.[^"]+|zen\.view\.show-newtab-button-top)"') {
     $name = [regex]::Escape($Matches[1])
     if ($prefsText -notmatch "user_pref\(`"$name`"") { $add += $line.Trim() }
   }
