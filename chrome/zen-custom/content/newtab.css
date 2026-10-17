@@ -1,0 +1,8 @@
+/* Calmer new tab page: hide sponsored and news clutter. */
+@-moz-document url("about:newtab"), url("about:home") {
+  @media -moz-pref("zen-custom.clean-newtab") {
+    .ds-outer-wrapper-breakpoint-override,
+    .top-site-outer.sponsored,
+    .discovery-stream { display: none !important; }
+  }
+}

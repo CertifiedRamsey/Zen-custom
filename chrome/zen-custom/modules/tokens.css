@@ -1,0 +1,9 @@
+/* Shared design tokens. Change a value here and every module follows. */
+:root {
+  --zc-radius: 10px;
+  --zc-tab-height: 30px;
+  --zc-gap: 4px;
+  --zc-accent: var(--zen-primary-color, #8aadf4);
+  --zc-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+  --zc-blur: 18px;
+}

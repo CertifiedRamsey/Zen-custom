@@ -1,0 +1,17 @@
+/* Floating URL bar: when you open the address bar it floats in the
+ * middle of the window like a command palette. */
+@media -moz-pref("zen-custom.floating-urlbar") {
+  #urlbar[breakout][breakout-extend] {
+    position: fixed !important;
+    top: 22vh !important;
+    left: 50% !important;
+    width: min(720px, 80vw) !important;
+    transform: translateX(-50%);
+    z-index: 9999 !important;
+  }
+  #urlbar[breakout][breakout-extend] > .urlbar-background {
+    border-radius: calc(var(--zc-radius) + 4px) !important;
+    box-shadow: var(--zc-shadow) !important;
+    backdrop-filter: blur(var(--zc-blur));
+  }
+}

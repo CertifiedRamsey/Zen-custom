@@ -1,0 +1,8 @@
+/* Clean toolbar: hide clutter you rarely click. */
+@media -moz-pref("zen-custom.clean-toolbar") {
+  #tracking-protection-icon-container,
+  #identity-permission-box,
+  #page-action-buttons > :not(#star-button-box, #urlbar-zoom-button) {
+    display: none !important;
+  }
+}

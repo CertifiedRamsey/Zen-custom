@@ -1,0 +1,13 @@
+/* Compact tabs: shorter vertical tabs with tighter spacing. */
+@media -moz-pref("zen-custom.compact-tabs") {
+  #tabbrowser-tabs .tabbrowser-tab {
+    min-height: var(--zc-tab-height) !important;
+    padding-block: 1px !important;
+  }
+  #tabbrowser-tabs .tabbrowser-tab .tab-content {
+    padding-inline: 8px !important;
+  }
+  #tabbrowser-tabs .tabbrowser-tab .tab-background {
+    border-radius: var(--zc-radius) !important;
+  }
+}

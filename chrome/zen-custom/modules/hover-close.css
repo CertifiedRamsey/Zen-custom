@@ -1,0 +1,10 @@
+/* Close buttons only show on the tab you're hovering. */
+@media -moz-pref("zen-custom.hover-close") {
+  .tabbrowser-tab:not(:hover) .tab-close-button {
+    opacity: 0 !important;
+    pointer-events: none;
+  }
+  .tabbrowser-tab .tab-close-button {
+    transition: opacity 120ms ease;
+  }
+}

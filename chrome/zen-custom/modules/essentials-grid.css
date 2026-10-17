@@ -1,0 +1,14 @@
+/* Essentials as a tidy icon grid with the accent color on the active one. */
+@media -moz-pref("zen-custom.essentials-grid") {
+  #zen-essentials-container,
+  .zen-essentials-container {
+    gap: var(--zc-gap) !important;
+  }
+  .tabbrowser-tab[zen-essential] .tab-background {
+    border-radius: var(--zc-radius) !important;
+  }
+  .tabbrowser-tab[zen-essential][selected] .tab-background {
+    outline: 2px solid var(--zc-accent) !important;
+    outline-offset: -2px;
+  }
+}
