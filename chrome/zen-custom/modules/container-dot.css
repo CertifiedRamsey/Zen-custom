@@ -1,0 +1,28 @@
+/* Container dot: a small dot in the container's colour in the bottom-right
+ * corner of every tab that's in a container (Essentials too).
+ * zen-custom.hide-container-bar hides Zen's coloured edge bar if the dot
+ * should replace it instead of sitting alongside. */
+@media -moz-pref("zen-custom.container-dot") {
+  .tabbrowser-tab[usercontextid]:not([zenDefaultUserContextId="true"]) {
+    position: relative;
+
+    & > .tab-stack > .tab-content::after {
+      content: "";
+      position: absolute;
+      right: 5px;
+      bottom: 5px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--identity-tab-color);
+      box-shadow: 0 0 0 1.5px light-dark(rgba(255, 255, 255, 0.7), rgba(0, 0, 0, 0.45));
+      pointer-events: none;
+    }
+  }
+}
+
+@media -moz-pref("zen-custom.hide-container-bar") {
+  .tabbrowser-tab .tab-context-line {
+    display: none !important;
+  }
+}
