@@ -29,7 +29,7 @@ Each one can be switched off live in `about:config`:
 | `zen-custom.folder-icon` | Outline folder icon in the folder's colour, animation kept | on |
 | `zen-custom.tight-footer` | Space icons sit right next to the library button | on |
 | `zen-custom.square-tiles` | Essentials tiles get small square-ish corners instead of big rounded ones | on |
-| `zen-custom.container-dot` | Small dot in the container colour at the bottom-right of every container tab, Essentials too | on |
+| `zen-custom.container-dot` | Small dot in the container colour at the bottom-left of every container tab, Essentials too | on |
 | `zen-custom.hide-container-bar` | Hides the coloured container edge bar so the dot replaces it | on |
 | `zen-custom.smooth-topbar` | Stops the bookmarks bar flickering and the page jumping when you move the mouse to the top (window then drags from the sidebar top, not the bookmarks bar) | on |
 | `zen-custom.tab-monitor` | Shift+Esc (or Ctrl+Alt+M) opens a panel of tabs grouped by space with memory, CPU and awake/asleep state; one-click sleep per tab or space; Process Manager one click away. Its toolbar button is in Customize Toolbar (JS, runs through Sine) | on |

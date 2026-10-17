@@ -1,4 +1,4 @@
-/* Container dot: a small dot in the container's colour in the bottom-right
+/* Container dot: a small dot in the container's colour in the bottom-left
  * corner of every tab that's in a container (Essentials too).
  * zen-custom.hide-container-bar hides Zen's coloured edge bar if the dot
  * should replace it instead of sitting alongside.
@@ -14,7 +14,7 @@
     & > .tab-stack > .tab-content::after {
       content: "";
       position: absolute;
-      right: 5px;
+      left: 5px;
       bottom: 5px;
       width: 6px;
       height: 6px;

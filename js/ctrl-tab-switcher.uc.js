@@ -100,9 +100,13 @@
     #zcts .shead { font-weight: 600; margin: 12px 2px 6px; }
     #zcts .shead:first-of-type { margin-top: 0; }
     #zcts .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
-    #zcts .card { padding: 6px; border-radius: 10px; cursor: pointer; border: 2px solid transparent;
+    #zcts .card { padding: 6px; border-radius: 10px; cursor: pointer; border: 3px solid transparent; opacity: .7;
       background: color-mix(in srgb, currentColor 5%, transparent); min-width: 0; }
-    #zcts .card.sel { border-color: var(--zen-primary-color, AccentColor); background: color-mix(in srgb, var(--zen-primary-color, AccentColor) 18%, transparent); }
+    /* the picked tab: a bold border in the text colour (always high contrast),
+       an accent ring round it, and full strength while the rest are dimmed */
+    #zcts .card.sel { opacity: 1; border-color: currentColor;
+      box-shadow: 0 0 0 3px var(--zen-primary-color, AccentColor), 0 6px 18px rgba(0,0,0,.35);
+      background: color-mix(in srgb, var(--zen-primary-color, AccentColor) 22%, transparent); }
     #zcts .thumb { height: 96px; border-radius: 6px; overflow: hidden; display: flex; align-items: center; justify-content: center;
       background: color-mix(in srgb, currentColor 8%, transparent); }
     #zcts .thumb canvas { width: 100%; height: 100%; object-fit: cover; object-position: top; }
@@ -113,9 +117,10 @@
     #zcts .card.sel .title span { font-weight: 600; }
     #zcts .sub { opacity: .6; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     #zcts .row { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 8px; cursor: pointer; opacity: .6;
-      border: 2px solid transparent; white-space: nowrap; overflow: hidden; }
+      border: 3px solid transparent; white-space: nowrap; overflow: hidden; }
     #zcts .row img { width: 16px; height: 16px; flex: none; }
-    #zcts .row.sel { opacity: 1; border-color: var(--zen-primary-color, AccentColor); }
+    #zcts .row.sel { opacity: 1; border-color: currentColor; box-shadow: 0 0 0 2px var(--zen-primary-color, AccentColor);
+      background: color-mix(in srgb, var(--zen-primary-color, AccentColor) 22%, transparent); }
     #zcts .empty { opacity: .6; padding: 12px 2px; }
   `;
 
