@@ -30,6 +30,7 @@ Each one can be switched off live in `about:config`:
 | `zen-custom.floating-urlbar` | Address bar opens as a centered command palette | off |
 | `zen-custom.clean-toolbar` | Hides rarely used URL bar icons | off |
 | `zen-custom.clean-newtab` | Removes sponsored and news blocks from the new tab page | off |
+| `zen-custom.routes-helper` | A "Routes" button on each space card in the Library that walks you through sending sites to that space (JS, needs Sine/fx-autoconfig) | on |
 
 Colors, radius and spacing live in `chrome/zen-custom/modules/tokens.css`.
 

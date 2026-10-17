@@ -14,3 +14,6 @@ user_pref("zen-custom.hover-close", false);
 user_pref("zen-custom.floating-urlbar", false);
 user_pref("zen-custom.clean-toolbar", false);
 user_pref("zen-custom.clean-newtab", false);
+
+// JS features (need fx-autoconfig, which Sine installs)
+user_pref("zen-custom.routes-helper", true);
