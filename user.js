@@ -1,5 +1,8 @@
-// zen-custom defaults. The installer copies this into your Zen profile.
+// zen-custom defaults. The installer adds any of these your profile doesn't
+// have yet to its prefs.js, so what you change in about:config stays changed.
 // Flip any of these in about:config to turn a feature on or off live.
+// (The installer puts this first one in your profile's user.js instead,
+// since Zen ignores userChrome.css without it.)
 user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true);
 
 // Thato's requests
@@ -23,5 +26,5 @@ user_pref("zen-custom.floating-urlbar", false);
 user_pref("zen-custom.clean-toolbar", false);
 user_pref("zen-custom.clean-newtab", false);
 
-// JS features (need fx-autoconfig, which Sine installs)
+// JS features (run through Sine, see js/README.md)
 user_pref("zen-custom.routes-helper", true);

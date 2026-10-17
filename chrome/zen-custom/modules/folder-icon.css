@@ -1,7 +1,73 @@
-/* Folder icon: turn Zen's filled 3D folder into a clean outline drawn in
- * the folder's colour. Only colours change, so the open/close animation,
- * custom icons and icon-only mode keep working. */
+/* Folder icon: turn the filled 3D folder into a clean outline drawn in
+ * the folder's colour. Only colours and edges change, never the moving
+ * parts, so the open/close animation, custom icons and icon-only mode keep
+ * working.
+ *
+ * With Zia (Sine) on, Zia hides Zen's folder drawing and draws its own
+ * glass folder (.zia-fi): a back with a tab, paper sheets that rise as it
+ * opens, a front that tips forward, and a box once it holds more than
+ * three. That's the one restyled here, in Zia's folder colour (--fi-accent),
+ * so Zia's Folder Color menu still decides the colour. Without Zia, the
+ * block at the end restyles Zen's own drawing instead. */
 @media -moz-pref("zen-custom.folder-icon") {
+  .zia-fi {
+    --zc-fi-line: 1.5px;
+    /* the folder colour, lifted on a dark sidebar (as Zia's glass was) and
+       deepened on a light one, so a dark space colour still reads */
+    --zc-fi-ink: light-dark(color-mix(in srgb, var(--fi-accent) 80%, black), color-mix(in srgb, var(--fi-accent) 65%, white));
+    --zc-fi-tint: color-mix(in srgb, var(--zc-fi-ink) 12%, transparent);
+    --zc-fi-paper: color-mix(in srgb, var(--zc-fi-ink) 24%, transparent);
+    filter: none !important;
+
+    /* the back and its tab: just the outline. Only its top shows above the
+       front (more once the front tips open), so the part behind the front
+       is cut away rather than showing through as a double line. */
+    & .zia-fi-back {
+      background: var(--zc-fi-ink) !important;
+      mask:
+        linear-gradient(#000 0 var(--zc-fi-back-show, 26%), transparent 0) intersect,
+        var(--shape) center / calc(100% - 2 * var(--zc-fi-line)) calc(100% - 2 * var(--zc-fi-line)) no-repeat exclude,
+        var(--shape) 0 0 / 100% 100% no-repeat !important;
+    }
+
+    /* the front, the box's front and its lid: outline plus a light tint */
+    & :is(.zia-fi-front, .zia-fb-front, .zia-fb-lid) {
+      mask: none !important;
+      box-sizing: border-box !important;
+      background: var(--zc-fi-tint) !important;
+      border: var(--zc-fi-line) solid var(--zc-fi-ink) !important;
+      box-shadow: none !important;
+    }
+    & .zia-fi-front { border-radius: 0.135em !important; }
+    & .zia-fb-front { border-radius: 0.11em !important; }
+    & .zia-fb-lid { border-radius: 0.05em !important; }
+
+    /* the box's inside: nothing, the outlines carry it */
+    & .zia-fb-back {
+      background: transparent !important;
+    }
+
+    /* paper: flat tint, no white glass or shadow */
+    & :is(.zia-fi-sheet, .zia-fb-sheet, .zia-fb-pass) {
+      background: var(--zc-fi-paper) !important;
+      box-shadow: none !important;
+      filter: none !important;
+    }
+
+    /* the folder's own icon on the front, in the folder colour */
+    & .zia-fi-mark {
+      fill: var(--zc-fi-ink) !important;
+      stroke: var(--zc-fi-ink) !important;
+      filter: none !important;
+    }
+  }
+
+  /* open: the front has tipped forward, so more of the back shows */
+  :is(zen-folder, tab-group):not([collapsed]) > .tab-group-label-container .zia-fi {
+    --zc-fi-back-show: 42%;
+  }
+
+  /* Plain Zen (Zia off): Zen's own folder drawing */
   zen-folder .tab-group-folder-icon svg {
     filter: none !important;
 

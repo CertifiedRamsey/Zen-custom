@@ -215,7 +215,9 @@
       oninput: e => { draft.adv = e.target.value; renderDraft(); },
     });
 
-    body.replaceChildren(
+    // flattened and null-free like h()'s children: replaceChildren would
+    // print an array or a null as text ("[object HTMLDivElement]", "null")
+    const kids = [
       h("h3", {}, `Send a site to ${name}`),
       h("div", { class: "zch-step" },
         h("span", { class: "zch-label" }, "1 · Which site?"),
@@ -250,8 +252,9 @@
         ? h("div", { class: "zch-row" },
             h("span", { class: "zch-muted" }, lastUndo.msg),
             h("button", { class: "zch-link", onclick: onUndo }, "Undo"))
-        : null
-    );
+        : null,
+    ];
+    body.replaceChildren(...kids.flat().filter(k => k != null && k !== false));
     renderDraft();
   }
 

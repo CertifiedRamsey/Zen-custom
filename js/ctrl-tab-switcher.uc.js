@@ -21,8 +21,8 @@
   const PREF = "zen-custom.ctrl-tab";
   const HTML = "http://www.w3.org/1999/xhtml";
 
-  if (!Services.prefs.getBoolPref(PREF, true)) return;
-
+  // read on each use, so switching the pref off works without a restart
+  const enabled = () => Services.prefs.getBoolPref(PREF, true);
   const delay = () => Services.prefs.getIntPref(PREF + ".delay", 200);
   const recentFirst = () => Services.prefs.getBoolPref(PREF + ".recent-order", false);
 
@@ -294,7 +294,7 @@
     if (e.timeStamp === lastStamp) return; // the same key event coming back from the page
     const tabKey = e.key === "Tab" && e.ctrlKey && !e.altKey && !e.metaKey;
     const stickyKey = e.code === "Space" && e.ctrlKey && e.altKey && !e.shiftKey && !e.metaKey;
-    if (!mode && !tabKey && !stickyKey) return;
+    if (!mode && ((!tabKey && !stickyKey) || !enabled())) return;
     lastStamp = e.timeStamp;
 
     if (!mode) {

@@ -15,7 +15,8 @@
   const HEAVY_MB = 500;
   const HTML = "http://www.w3.org/1999/xhtml";
 
-  if (!Services.prefs.getBoolPref(PREF, true)) return;
+  // read on each use, so switching the pref off works without a restart
+  const enabled = () => Services.prefs.getBoolPref(PREF, true);
 
   const MB = b => b / (1024 * 1024);
   const fmtMem = b => (MB(b) >= 1024 ? (MB(b) / 1024).toFixed(1) + " GB" : Math.round(MB(b)) + " MB");
@@ -59,7 +60,9 @@
 
   async function sample() {
     const info = await ChromeUtils.requestProcInfo();
-    const now = Cu.now() * 1e6; // ms -> ns, same unit as cpuTime
+    // ms -> ns, same unit as cpuTime (Cu.now() no longer exists in Firefox 158,
+    // and its error left the panel empty)
+    const now = performance.now() * 1e6;
     const procs = new Map();
     for (const p of [info, ...info.children]) procs.set(p.pid, { mem: p.memory || 0, cpu: p.cpuTime || 0 });
 
@@ -259,9 +262,15 @@
   });
   panel.addEventListener("popuphidden", () => { clearInterval(timer); timer = null; });
 
+  // A button tucked under » (or not shown) has no box to hang the panel on:
+  // the panel would open and shut at once, so use the page instead.
+  const onScreen = el => !!el && !el.hasAttribute("overflowedItem") && el.getBoundingClientRect().width > 0;
+
   function toggle(anchor) {
     if (panel.state === "open" || panel.state === "showing") return panel.hidePopup();
-    const a = anchor || document.getElementById("zen-custom-tab-monitor-button") || gBrowser.selectedBrowser;
+    if (!enabled()) return;
+    const button = document.getElementById("zen-custom-tab-monitor-button");
+    const a = onScreen(anchor) ? anchor : onScreen(button) ? button : gBrowser.selectedBrowser;
     panel.openPopup(a, a === gBrowser.selectedBrowser ? "overlap" : "bottom-start");
   }
 
@@ -270,7 +279,9 @@
       id: "zen-custom-tab-monitor-button",
       label: "Tab Monitor",
       tooltiptext: "See which tabs use memory and CPU (Shift+Esc)",
-      defaultArea: CustomizableUI.AREA_NAVBAR,
+      // No default spot: in Zen's single toolbar the nav bar is the top bar,
+      // already full with the eight buttons chosen for it, and a ninth would
+      // push five back under ». Add it from Customize Toolbar if wanted.
       onCommand: e => toggle(e.target),
       onCreated: node => node.style.setProperty("list-style-image", 'url("chrome://global/skin/icons/performance.svg")'),
     });
@@ -278,10 +289,11 @@
     // Already registered in an earlier window.
   }
 
-  // Take over Shift+Esc from the built-in Process Manager.
-  document.getElementById("key_aboutProcesses")?.setAttribute("disabled", "true");
-
+  // Take over Shift+Esc from the built-in Process Manager. (Zen sets up its
+  // shortcut keys after this script runs, so disabling key_aboutProcesses
+  // here never stuck; stopping the key event is what keeps it from opening.)
   window.addEventListener("keydown", e => {
+    if (!enabled()) return;
     const shiftEsc = e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey && e.key === "Escape";
     const ctrlAltM = e.ctrlKey && e.altKey && !e.shiftKey && e.code === "KeyM";
     if (shiftEsc || ctrlAltM) {

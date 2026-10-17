@@ -1,20 +1,43 @@
 /* Top bar: ⋯ menu first, then every button spread evenly across.
- * Zen puts a full-width separator in this bar, which is what pushed the
- * buttons right, left the corner empty and sent five of them into the »
- * overflow menu. Collapsing it lets them all fit. */
+ * Three things pushed the buttons right and sent five of them into the »
+ * overflow menu:
+ *  - Zen puts a full-width separator in this bar.
+ *  - Zia (Sine) adds a slot here for the space name that takes half the
+ *    bar, and leaves it there empty when the name stays in the tab list.
+ *  - Eight buttons at Zen's size (28px each) need 226px; the bar in a
+ *    normal-width sidebar is about 210px.
+ * So the separator and the empty slot go, and the buttons get 4px of
+ * padding round their 16px icons (24px each, 192px for all eight).
+ * If Zia is set to show the space name up here, the name keeps its room
+ * and a narrow sidebar can still send the last buttons under ». */
 @media -moz-pref("zen-custom.top-bar") {
   #zen-sidebar-top-buttons-separator {
     display: none !important;
   }
+
+  #zia-workspace-slot:empty {
+    display: none !important;
+  }
+  #zia-workspace-slot {
+    flex: 0 1 auto !important;
+    min-width: 0 !important;
+  }
+
   #zen-sidebar-top-buttons-customization-target {
     justify-content: space-between !important;
-    min-width: 0;
+    min-width: 0 !important;
   }
-  #zen-sidebar-top-buttons .toolbarbutton-1 {
-    --toolbarbutton-outer-padding: 1px !important;
-    --toolbarbutton-inner-padding: 6px !important;
+
+  /* Zen keeps the compact-mode button in this bar's own slot, ahead of the
+     nav buttons; Thato's order puts it last (⋯ is already first) */
+  #zen-toggle-compact-mode {
+    order: 1 !important;
   }
-  #PanelUI-button {
-    order: -1;
+
+  /* Firefox 158 names these --toolbarbutton-padding-inner/-outer (the
+     older --toolbarbutton-inner-padding names no longer do anything) */
+  #zen-sidebar-top-buttons :is(.toolbarbutton-1, #PanelUI-menu-button) {
+    --toolbarbutton-padding-outer: 0px !important;
+    --toolbarbutton-padding-inner: 4px !important;
   }
 }

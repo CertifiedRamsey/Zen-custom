@@ -1,14 +1,55 @@
-/* Soft tiles: replace the thick dark outlines on Essentials and the
- * selected tab with a faint hairline. The coloured edge bar is left alone
- * on purpose (it marks which silo you're in). */
+/* Soft tiles: replace the dark outlines and contrast on Essentials and the
+ * selected tab with a faint hairline, and make the selected tab a soft fill.
+ *
+ * With Zia (Sine) on, Zia draws these itself: a bright gradient edge round
+ * each tile and the open tab, a dark fill under the open tab, a glow round
+ * it and a dark ring inside the open Essential. Its sheet loads after this
+ * one, so instead of fighting its rules this points Zia's own settings
+ * (--zia-*) at the soft look, and the two things those settings don't
+ * reach carry an id (#zc) to outrank Zia. Without Zia the --zia-* lines do
+ * nothing and the plain-Zen block at the end applies. */
 @media -moz-pref("zen-custom.soft-tiles") {
-  .tabbrowser-tab[zen-essential="true"] .tab-background {
-    border: 1px solid light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.08)) !important;
+  :root {
+    --zc-hairline: light-dark(rgba(0, 0, 0, 0.1), rgba(255, 255, 255, 0.1));
+    --zc-tile-fill: light-dark(rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.06));
+    --zc-selected-fill: light-dark(rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.12));
+
+    /* Zia: one even hairline instead of the bright two-way gradient edge */
+    --zia-shine-layers: linear-gradient(var(--zc-hairline), var(--zc-hairline)) !important;
+    /* Zia: no edge on the open tab, just the soft fill */
+    --zia-tab-shine-layers: linear-gradient(transparent, transparent) !important;
+    --zia-essential-bg: var(--zc-tile-fill) !important;
+    --zia-active-tab-bg: var(--zc-selected-fill) !important;
+    --zia-active-tab-bg-folder: var(--zc-selected-fill) !important;
+    --zia-active-glow-color: transparent !important;
+  }
+
+  /* No glow round the open tab or split, Zia's favicon-tinted one included */
+  :root:not(#zc) .tabbrowser-tab:not([zen-essential])[visuallyselected] > .tab-stack > .tab-background,
+  :root:not(#zc) tab-group[split-view-group] > .tab-group-container {
+    box-shadow: none !important;
     outline: none !important;
   }
-  .tabbrowser-tab:not([zen-essential])[visuallyselected] .tab-background {
-    border-color: transparent !important;
+
+  /* The open Essential: a hairline, not Zia's dark ring round its inner card */
+  :root:not(#zc) .tabbrowser-tab[zen-essential][visuallyselected] > .tab-stack > .tab-background {
+    box-shadow: inset 0 0 0 1px var(--zc-hairline) !important;
     outline: none !important;
-    background: light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.12)) !important;
+
+    &::before {
+      box-shadow: none !important;
+    }
+  }
+
+  /* Plain Zen (Zia off): Zia marks the window with zia-urlbar-position */
+  :root:not([zia-urlbar-position]) {
+    & .tabbrowser-tab[zen-essential]:not([visuallyselected]) > .tab-stack > .tab-background {
+      box-shadow: inset 0 0 0 1px var(--zc-hairline) !important;
+      outline: none !important;
+    }
+
+    & .tabbrowser-tab:not([zen-essential])[visuallyselected] > .tab-stack > .tab-background {
+      background: var(--zc-selected-fill) !important;
+    }
   }
 }

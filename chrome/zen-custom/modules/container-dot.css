@@ -1,9 +1,14 @@
 /* Container dot: a small dot in the container's colour in the bottom-right
  * corner of every tab that's in a container (Essentials too).
  * zen-custom.hide-container-bar hides Zen's coloured edge bar if the dot
- * should replace it instead of sitting alongside. */
+ * should replace it instead of sitting alongside.
+ *
+ * Every container tab gets the dot, including tabs in their space's own
+ * container. Zen marks those (and every Essential) zenDefaultUserContextId,
+ * so skipping them left Essentials and most tabs with no marker at all
+ * once the bar was hidden. */
 @media -moz-pref("zen-custom.container-dot") {
-  .tabbrowser-tab[usercontextid]:not([zenDefaultUserContextId="true"]) {
+  .tabbrowser-tab[usercontextid] {
     position: relative;
 
     & > .tab-stack > .tab-content::after {

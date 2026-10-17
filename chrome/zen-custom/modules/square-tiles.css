@@ -1,15 +1,21 @@
 /* Square tiles: Essentials get small, crisp corners instead of Zen's
- * big rounded squircle. Change --zc-tile-radius to taste. */
+ * big rounded squircle. Change --zc-tile-radius to taste.
+ *
+ * Zia (Sine) rounds the tiles again from its own --zia-essential-radius,
+ * and its sheet loads after this one, so the radius is set there too and
+ * the direct rule carries an id (#zc) to outrank Zia's. */
 @media -moz-pref("zen-custom.square-tiles") {
-  .tabbrowser-tab[zen-essential="true"] {
+  :root {
     --zc-tile-radius: 4px;
-    --border-radius-medium: var(--zc-tile-radius) !important;
+    --zia-essential-radius: var(--zc-tile-radius) !important;
+  }
 
-    & .tab-background,
-    & .tab-background::before,
-    & .tab-background::after {
-      border-radius: var(--zc-tile-radius) !important;
-      corner-shape: round !important;
-    }
+  .tabbrowser-tab[zen-essential] {
+    --border-radius-medium: var(--zc-tile-radius) !important;
+  }
+
+  :root:not(#zc) .tabbrowser-tab[zen-essential] > .tab-stack > .tab-background {
+    border-radius: var(--zc-tile-radius) !important;
+    corner-shape: round !important;
   }
 }

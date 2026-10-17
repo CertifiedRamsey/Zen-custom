@@ -14,9 +14,14 @@
  * short delay, so the page never moves. Only the fade is animated.
  * Window still drags from the sidebar top and the empty tab area.
  *
+ * Zia (Sine) replaces the bar's transition with its own colour fade, which
+ * is what made the bar's height snap while the page slid: its rule loads
+ * after this one with the same weight, so these carry an id (#zc) to
+ * outrank it, and keep Zia's colour fade (and its tab-switch snap) going.
+ *
  * Pref: zen-custom.smooth-topbar (flip off in about:config to compare). */
 @media -moz-pref("zen-custom.smooth-topbar") {
-  :root[zen-single-toolbar="true"]:not([customizing]) {
+  :root:not(#zc)[zen-single-toolbar="true"]:not([customizing]) {
     & #zen-appcontent-navbar-wrapper,
     & #zen-appcontent-navbar-wrapper :is(#zen-appcontent-navbar-container, #PersonalToolbar, toolbar, .zen-toolbar-background) {
       -moz-window-dragging: no-drag !important;
@@ -26,6 +31,10 @@
       position: relative;
       z-index: 4 !important;
       /* Height snaps (0s) after a 0.15s hover-intent delay; opacity fades. */
+      transition: height 0s linear 0.15s, opacity 0.12s ease-out 0.15s,
+        background-color var(--zia-color-fade, 0s) ease, border-color var(--zia-color-fade, 0s) ease !important;
+    }
+    &[zia-color-snap="true"] #zen-appcontent-navbar-wrapper {
       transition: height 0s linear 0.15s, opacity 0.12s ease-out 0.15s !important;
     }
 
