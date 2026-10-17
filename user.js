@@ -7,6 +7,7 @@ user_pref("zen-custom.soft-tiles", true);
 user_pref("zen-custom.top-bar", true);
 user_pref("zen-custom.folder-icon", true);
 user_pref("zen-custom.tight-footer", true);
+user_pref("zen-custom.tab-monitor", true);
 
 // Extras, off until wanted
 user_pref("zen-custom.compact-tabs", false);

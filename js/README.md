@@ -9,3 +9,7 @@ fx-autoconfig, which Sine already installs. The installer copies them into
   Space Routing, so routes also appear in Zen's settings and keep working
   without this script. Toggle: `zen-custom.routes-helper`. Written against
   Zen 1.23.3b.
+- `tab-monitor.uc.js`: Shift+Esc (or Ctrl+Alt+M, or its toolbar button)
+  opens a panel of your tabs grouped by space, showing memory, CPU and
+  whether each is awake or asleep, with one-click sleep per tab or space.
+  Toggle: `zen-custom.tab-monitor`.
