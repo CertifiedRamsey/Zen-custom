@@ -1,0 +1,26 @@
+/* Folder style: which of Zia's two drawings a folder wears. folder-style.uc.js
+ * puts zc-fstyle="folder" or "box" on a folder (right-click > Change icon >
+ * Folder style…); no attribute means Zia's own rule (folder up to three
+ * tabs, box past that). Zia swaps them with opacity and a morph animation,
+ * so these hold the chosen one in place over both. */
+:is(zen-folder, tab-group)[zc-fstyle="folder"] > .tab-group-label-container .zia-fi {
+  & > .zia-fi-fold { opacity: 1 !important; animation: none !important; }
+  & > .zia-fb { opacity: 0 !important; animation: none !important; }
+}
+
+:is(zen-folder, tab-group)[zc-fstyle="box"] > .tab-group-label-container .zia-fi {
+  & > .zia-fb { opacity: 1 !important; animation: none !important; }
+  & > .zia-fi-fold { opacity: 0 !important; animation: none !important; }
+}
+
+/* Zia only fills the box past three tabs; a box picked for a smaller folder
+ * shows one sheet per tab (the box's first child is its inside, so sheets
+ * start at the second) */
+:is(zen-folder, tab-group)[zc-fstyle="box"]:not([zia-fi-full]) > .tab-group-label-container .zia-fb-sheet {
+  opacity: 0;
+}
+:is(zen-folder, tab-group)[zc-fstyle="box"]:not([zia-fi-full])[zia-fi-count="1"] > .tab-group-label-container .zia-fb-sheet:nth-child(-n+2),
+:is(zen-folder, tab-group)[zc-fstyle="box"]:not([zia-fi-full])[zia-fi-count="2"] > .tab-group-label-container .zia-fb-sheet:nth-child(-n+3),
+:is(zen-folder, tab-group)[zc-fstyle="box"]:not([zia-fi-full])[zia-fi-count="3"] > .tab-group-label-container .zia-fb-sheet:nth-child(-n+4) {
+  opacity: 1;
+}

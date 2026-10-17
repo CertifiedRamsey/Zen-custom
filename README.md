@@ -27,12 +27,14 @@ Each one can be switched off live in `about:config`:
 | `zen-custom.soft-tiles` | Faint hairline instead of dark outlines on Essentials and the selected tab, which gets a soft fill | on |
 | `zen-custom.top-bar` | ⋯ menu first, all buttons spread across the top bar, no » overflow | on |
 | `zen-custom.folder-icon` | Outline folder icon in the folder's colour, animation kept | on |
-| `zen-custom.tight-footer` | Space icons sit right next to the library button | on |
+| `zen-custom.tight-footer` | Space icons sit just after the library button, evenly spaced | on |
 | `zen-custom.square-tiles` | Essentials tiles get small square-ish corners instead of big rounded ones | on |
 | `zen-custom.container-dot` | Small dot in the container colour at the bottom-left of every container tab, Essentials too | on |
 | `zen-custom.hide-container-bar` | Hides the coloured container edge bar so the dot replaces it | on |
 | `zen-custom.smooth-topbar` | Stops the bookmarks bar flickering and the page jumping when you move the mouse to the top (window then drags from the sidebar top, not the bookmarks bar) | on |
 | `zen-custom.tab-monitor` | Shift+Esc (or Ctrl+Alt+M) opens a panel of tabs grouped by space with memory, CPU and awake/asleep state; one-click sleep per tab or space; Process Manager one click away. Its toolbar button is in Customize Toolbar (JS, runs through Sine) | on |
+| `zen-custom.folder-style-picker` | Right-click a folder > Change icon > Folder style… to pick Zia's folder, Zia's box, or Automatic (box past 3 tabs), for one folder, a space or every space. Choices are kept in `zen-custom.folder-style` (JS, needs Sine) | on |
+| `zen-custom.pdf-night` | Night mode for the built-in PDF viewer: Alt+N, the moon in the address bar, or right-click > Night mode for PDFs. `zen-custom.pdf-night.strength` (50-100) sets how dark (JS, needs Sine) | on |
 | `zen.view.show-newtab-button-top` | Zen's own setting, set to false: new tabs (Ctrl+T, +) open at the bottom of the space, and the + New Tab button moves to the bottom too. The uninstaller leaves it as it is | false |
 | `zen-custom.ctrl-tab` | Ctrl+Tab skips sleeping tabs (hold Ctrl for a picker); Ctrl+Alt+Space opens a searchable tab picker. Tune with `zen-custom.ctrl-tab.delay` and `zen-custom.ctrl-tab.recent-order` (JS, runs through Sine) | on |
 | `zen-custom.compact-tabs` | Shorter, rounder vertical tabs | off |

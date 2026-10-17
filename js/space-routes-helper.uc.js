@@ -399,17 +399,35 @@
     panel?.hidePopup();
   }
 
-  // The Library builds its sections lazily and re-renders cards, so watch for them.
+  // The Library builds its sections lazily and re-renders cards, so watch for
+  // them. Only a new space card (or something holding one) needs a pill, so
+  // the many rows the Library builds while you browse folders are skipped
+  // without touching the page; and once the Library exists, only it is
+  // watched instead of the whole window.
+  const CARD = ".zen-library-space[data-uuid]";
+  const bringsCard = n =>
+    n.nodeType === 1 && (n.matches(CARD) || (n.firstElementChild && !n.closest(".zen-library-space-tabs") && n.querySelector(CARD)));
   let queued = false;
-  const observer = new MutationObserver(() => {
+  let watching = null;
+  const observer = new MutationObserver(records => {
+    if (!watching) watchLibrary();
     if (queued) return;
+    if (!records.some(r => [...r.addedNodes].some(bringsCard))) return;
     queued = true;
     requestAnimationFrame(() => {
       queued = false;
-      inject();
+      inject(watching || document);
     });
   });
-  observer.observe(document.documentElement, { childList: true, subtree: true });
+  function watchLibrary() {
+    const library = document.querySelector("zen-library");
+    if (!library || library === watching) return;
+    watching = library;
+    observer.disconnect();
+    observer.observe(library, { childList: true, subtree: true });
+  }
+  watchLibrary();
+  if (!watching) observer.observe(document.documentElement, { childList: true, subtree: true });
   inject();
 
   Services.prefs.addObserver(PREF, () => (enabled() ? inject() : removeAll()));

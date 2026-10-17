@@ -18,6 +18,10 @@ user_pref("zen-custom.ctrl-tab", true);
 user_pref("zen-custom.ctrl-tab.delay", 200);
 user_pref("zen-custom.ctrl-tab.recent-order", false);
 user_pref("zen-custom.tab-monitor", true);
+user_pref("zen-custom.folder-style-picker", true);
+user_pref("zen-custom.pdf-night", true);
+user_pref("zen-custom.pdf-night.on", false);
+user_pref("zen-custom.pdf-night.strength", 90);
 // Zen setting: new tabs (Ctrl+T, +) open at the bottom of the space.
 // Also moves the + New Tab button to the bottom.
 user_pref("zen.view.show-newtab-button-top", false);

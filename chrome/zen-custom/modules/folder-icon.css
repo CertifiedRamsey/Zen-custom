@@ -54,11 +54,28 @@
       filter: none !important;
     }
 
-    /* the folder's own icon on the front, in the folder colour */
+    /* the folder's own icon on the front: drawn in the folder colour it
+       blended into its tinted front and was hard to see. Now it's bigger
+       and drawn in white (or near-black on a light sidebar), which reads
+       clearly on the solid front below */
     & .zia-fi-mark {
-      fill: var(--zc-fi-ink) !important;
-      stroke: var(--zc-fi-ink) !important;
+      width: 0.6em !important;
+      height: 0.6em !important;
+      fill: var(--zc-fi-mark) !important;
+      stroke: var(--zc-fi-mark) !important;
       filter: none !important;
+    }
+
+    /* keep the icon's layout work inside it (the Library draws many) */
+    contain: layout style;
+  }
+
+  /* a folder wearing its own icon gets a solid front in the folder colour,
+     so the icon sits on a plain, strong background */
+  :is(zen-folder, tab-group)[zia-fi-marked] > .tab-group-label-container .zia-fi {
+    --zc-fi-mark: light-dark(#fff, #111);
+    & :is(.zia-fi-front, .zia-fb-front) {
+      background: var(--zc-fi-ink) !important;
     }
   }
 

@@ -22,3 +22,11 @@ installer asks.
   without waking sleeping ones; hold Ctrl for an Alt+Tab-style picker.
   Ctrl+Alt+Space opens a stay-open picker with search across spaces.
   Toggle: `zen-custom.ctrl-tab` (plus `.delay` and `.recent-order`).
+- `folder-style.uc.js`: adds Folder style… under a folder's right-click >
+  Change icon (Zia's menu). Pick Automatic, Folder or Box, for this folder,
+  every folder in the space, or every folder everywhere. Toggle:
+  `zen-custom.folder-style-picker`; choices in `zen-custom.folder-style`.
+  The drawing is in `modules/folder-style.css`.
+- `pdf-night-mode.uc.js`: night mode for the built-in PDF viewer. Alt+N, the
+  moon in the address bar, or right-click > Night mode for PDFs. Remembered
+  across PDFs. Toggle: `zen-custom.pdf-night` (plus `.strength`).
