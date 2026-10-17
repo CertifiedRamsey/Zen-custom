@@ -10,6 +10,7 @@ user_pref("zen-custom.tight-footer", true);
 user_pref("zen-custom.square-tiles", true);
 user_pref("zen-custom.container-dot", true);
 user_pref("zen-custom.hide-container-bar", true);
+user_pref("zen-custom.smooth-topbar", true);
 user_pref("zen-custom.tab-monitor", true);
 
 // Extras, off until wanted
