@@ -27,7 +27,7 @@ Each one can be switched off live in `about:config`:
 | `zen-custom.tight-footer` | Space icons sit right next to the library button | on |
 | `zen-custom.square-tiles` | Essentials tiles get small square-ish corners instead of big rounded ones | on |
 | `zen-custom.container-dot` | Small dot in the container colour at the bottom-right of every container tab, Essentials too | on |
-| `zen-custom.hide-container-bar` | Hides the coloured container edge bar (turn on if the dot should replace it) | off |
+| `zen-custom.hide-container-bar` | Hides the coloured container edge bar so the dot replaces it | on |
 | `zen-custom.tab-monitor` | Shift+Esc (or Ctrl+Alt+M / toolbar button) opens a panel of tabs grouped by space with memory, CPU and awake/asleep state; one-click sleep per tab or space; Process Manager one click away (JS, needs Sine/fx-autoconfig) | on |
 | `zen-custom.compact-tabs` | Shorter, rounder vertical tabs | off |
 | `zen-custom.hover-close` | Close buttons only on the hovered tab | off |
