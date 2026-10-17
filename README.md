@@ -32,7 +32,7 @@ Each one can be switched off live in `about:config`:
 | `zen-custom.container-dot` | Small dot in the container colour at the bottom-left of every container tab, Essentials too | on |
 | `zen-custom.hide-container-bar` | Hides the coloured container edge bar so the dot replaces it | on |
 | `zen-custom.smooth-topbar` | Stops the bookmarks bar flickering and the page jumping when you move the mouse to the top (window then drags from the sidebar top, not the bookmarks bar) | on |
-| `zen-custom.steady-sidebar` | Stops the compact-mode sidebar sliding away and back while the mouse rests on its top row of buttons (in compact mode the window can't be dragged from the sidebar; Win+arrow keys still move it) | on |
+| `zen-custom.steady-sidebar` | Stops the compact-mode sidebar sliding away and back while the mouse rests on its top row of buttons (while compact mode hides the sidebar, the window can't be dragged from it; Win+arrow keys still move it) | on |
 | `zen-custom.tab-monitor` | Shift+Esc (or Ctrl+Alt+M) opens a panel of tabs grouped by space with memory, CPU and awake/asleep state; one-click sleep per tab or space; Process Manager one click away. Its toolbar button is in Customize Toolbar (JS, runs through Sine) | on |
 | `zen-custom.folder-style-picker` | Right-click a folder > Change icon > Folder style… to pick Zia's folder, Zia's box, or Automatic (box past 3 tabs), for one folder, a space or every space. Choices are kept in `zen-custom.folder-style` (JS, needs Sine) | on |
 | `zen-custom.pdf-night` | Night mode for the built-in PDF viewer: Alt+N, the moon in the address bar, or right-click > Night mode for PDFs. `zen-custom.pdf-night.strength` (50-100) sets how dark (JS, needs Sine) | on |
@@ -59,9 +59,9 @@ Colors, radius and spacing live in `chrome/zen-custom/modules/tokens.css`.
    powershell -ExecutionPolicy Bypass -File .\install\install.ps1
    ```
    The first time, it asks whether to switch on Sine's "Enable installing JS
-   from unofficial sources". Press Enter for yes: Routes, Tab Monitor and
-   Ctrl+Tab are scripts, and Sine only runs scripts from outside its store
-   with that on. Say no and everything else still works; you can tick it
+   from unofficial sources". Press Enter for yes: Routes, Tab Monitor,
+   Ctrl+Tab, Folder style and PDF night mode are scripts, and Sine only runs
+   scripts from outside its store with that on. Say no and everything else still works; you can tick it
    later in Settings > Sine Mods.
 4. Open Zen. In Settings > Zen Mods (and in Sine, if you use it), disable
    the mods this repo now covers.

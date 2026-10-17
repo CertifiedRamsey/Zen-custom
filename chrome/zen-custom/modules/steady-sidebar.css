@@ -11,12 +11,15 @@
  * hover shows it again: a slide-out/slide-in loop. Zia's space-name slot
  * in the same row is a drag area too.
  *
- * Fix: in compact mode only, make the whole floating sidebar a normal area.
+ * Fix: in compact mode only, and only when compact mode hides the sidebar
+ * (Zen's zen.view.compact.hide-tabbar, on by default), make the whole
+ * floating sidebar a normal area. When compact mode only hides the toolbar
+ * the sidebar never slides, so it keeps its drag area.
  * Trade-off: in compact mode you can't drag the window from the sidebar
  * (Win+arrow keys still move/snap it). Outside compact mode nothing changes.
  *
  * Pref: zen-custom.steady-sidebar (flip off in about:config to compare). */
-@media -moz-pref("zen-custom.steady-sidebar") {
+@media -moz-pref("zen-custom.steady-sidebar") and -moz-pref("zen.view.compact.hide-tabbar") {
   :root:not(#zc)[zen-compact-mode="true"]:not([customizing]) {
     & #navigator-toolbox,
     & #navigator-toolbox :is(toolbar, #zia-workspace-slot, .zen-workspace-empty-space, #titlebar) {

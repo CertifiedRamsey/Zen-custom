@@ -56,8 +56,9 @@
 
     /* the folder's own icon on the front: drawn in the folder colour it
        blended into its tinted front and was hard to see. Now it's bigger
-       and drawn in white (or near-black on a light sidebar), which reads
-       clearly on the solid front below */
+       and drawn in white on a light sidebar (where the front is the deep
+       colour) or near-black on a dark one (where the front is the light
+       colour), so it reads clearly on the solid front below */
     & .zia-fi-mark {
       width: 0.6em !important;
       height: 0.6em !important;

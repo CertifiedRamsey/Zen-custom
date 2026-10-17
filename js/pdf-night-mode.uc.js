@@ -38,10 +38,12 @@
 
   function sheetFor(k) {
     const dark = Math.round(255 * (1 - k)); // what white turns into
-    // canvas = the drawn page; thumbnails in the sidebar follow along
+    // canvas = the drawn page; thumbnails in the sidebar follow along (older
+    // pdf.js: #thumbnailView .thumbnailImage; newer: #thumbnailsView ... img)
     const css = `
       #viewerContainer .pdfViewer .page .canvasWrapper,
-      #thumbnailView .thumbnailImage {
+      #thumbnailView .thumbnailImage,
+      #thumbnailsView .thumbnailImageContainer > img {
         filter: invert(${k}) hue-rotate(180deg) !important;
       }
       #viewerContainer .pdfViewer .page {
