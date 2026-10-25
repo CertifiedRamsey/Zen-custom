@@ -12,6 +12,9 @@ $utf8 = New-Object System.Text.UTF8Encoding $false   # UTF-8 without a BOM
 $version = "0.0.0"
 $vf = Join-Path $repo "VERSION"
 if (Test-Path $vf) { $version = ([IO.File]::ReadAllText($vf)).Trim() }
+# Windows PowerShell 5.1 can write arrays as {"value":[...],"Count":n} without this,
+# which would garble other mods' entries in Sine's mods.json.
+Remove-TypeData System.Array -ErrorAction SilentlyContinue
 . (Join-Path $PSScriptRoot "find-profile.ps1")
 
 # only this login's Zen (a shared PC can show other people's too)

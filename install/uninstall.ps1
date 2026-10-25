@@ -6,9 +6,13 @@ param([string]$ProfilePath)
 
 $ErrorActionPreference = "Stop"
 $utf8 = New-Object System.Text.UTF8Encoding $false   # UTF-8 without a BOM
+# Windows PowerShell 5.1 can write arrays as {"value":[...],"Count":n} without this.
+Remove-TypeData System.Array -ErrorAction SilentlyContinue
 . (Join-Path $PSScriptRoot "find-profile.ps1")
 
-if (Get-Process zen -ErrorAction SilentlyContinue) {
+# only this login's Zen (a shared PC can show other people's too)
+$mySession = (Get-Process -Id $PID).SessionId
+if (Get-Process zen -ErrorAction SilentlyContinue | Where-Object { $_.SessionId -eq $mySession }) {
   Write-Host "Please close Zen first, then run this again." -ForegroundColor Yellow
   exit 1
 }
@@ -39,7 +43,7 @@ if (Test-Path $modsJson) {
     [IO.File]::WriteAllText($modsJson, (ConvertTo-Json -InputObject $mods -Depth 32), $utf8)
   }
 }
-foreach ($n in "space-routes-helper.uc.js", "tab-monitor.uc.js", "ctrl-tab-switcher.uc.js") {
+foreach ($n in "space-routes-helper.uc.js", "tab-monitor.uc.js", "ctrl-tab-switcher.uc.js", "folder-style.uc.js", "pdf-night-mode.uc.js") {
   Remove-Item (Join-Path (Join-Path $chrome "JS") $n) -Force -ErrorAction SilentlyContinue
 }
 
