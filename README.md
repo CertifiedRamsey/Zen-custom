@@ -109,7 +109,17 @@ powershell -ExecutionPolicy Bypass -File .\setup\capture-settings.ps1
 4. Open Zen. In Settings > Zen Mods (and in Sine, if you use it), disable
    the mods this repo now covers.
 
-To update later: `git pull`, close Zen, run the installer again. It never
+To update later, paste this into PowerShell (no zip, no Git needed):
+
+```powershell
+irm https://raw.githubusercontent.com/CertifiedRamsey/Zen-custom/main/update.ps1 | iex
+```
+
+It downloads the latest version straight into `Documents\zen-custom`
+(set `$env:ZC_DIR` first if yours is elsewhere), closes Zen, runs the
+installer, clears Zen's startup cache and opens Zen again. The old copy is
+kept in `%LOCALAPPDATA%\zen-custom-update\previous` until the next update.
+In a git clone it runs `git pull` instead. The installer never
 resets a switch you changed in `about:config`; it only adds new ones.
 The installer backs up your old `chrome` files, `user.js`, `prefs.js` and
 Sine's mod list to `<profile>\zen-custom-backup-<date>` each time.
