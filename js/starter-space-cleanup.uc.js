@@ -6,8 +6,9 @@
 //
 // A brand-new Zen profile starts with one empty space. After you sign in,
 // your synced spaces arrive next to it and you'd delete it by hand. This
-// remembers that first space and removes it once another space shows up, as
-// long as you haven't put any tabs in it. Then it switches itself off.
+// remembers that first space and removes it once another space shows up.
+// Tabs in it move to your first synced space first; only empty tabs and the
+// sign-in pages close. If it holds a folder, it stays. Then this switches off.
 // Only bootstrap.ps1 turns it on (zen-custom.starter-space-cleanup = true,
 // written into new profiles), so profiles you already have are never touched.
 // The remembered space is in zen-custom.starter-space.
@@ -17,7 +18,8 @@
 
   const ON_PREF = "zen-custom.starter-space-cleanup";
   const ID_PREF = "zen-custom.starter-space";
-  const EMPTY_URLS = ["about:blank", "about:newtab", "about:home"];
+  // Tabs that can close with the space: empty ones and the sign-in pages.
+  const DISPOSABLE = /^(about:(blank|newtab|home|preferences|welcome)|https:\/\/accounts\.firefox\.com\/)/;
 
   const enabled = () => Services.prefs.getBoolPref(ON_PREF, false);
 
@@ -26,15 +28,19 @@
     Services.prefs.clearUserPref(ID_PREF);
   }
 
-  // Tabs you'd mind losing: anything in the space that isn't an empty new tab.
-  function hasRealTabs(uuid) {
-    return gBrowser.tabs.some(
-      tab =>
-        tab.getAttribute("zen-workspace-id") === uuid &&
-        !tab.hasAttribute("zen-essential") &&
-        !tab.hasAttribute("zen-empty-tab") &&
-        !EMPTY_URLS.includes(tab.linkedBrowser?.currentURI?.spec)
-    );
+  const tabsIn = uuid =>
+    gBrowser.tabs.filter(tab => tab.getAttribute("zen-workspace-id") === uuid && !tab.hasAttribute("zen-essential"));
+
+  // Tabs worth keeping. Synced tabs arrive unloaded, so judge those by
+  // what they will load, not by the blank page they show for now.
+  function keepers(uuid) {
+    return tabsIn(uuid).filter(tab => {
+      if (tab.hasAttribute("zen-empty-tab")) return false;
+      const url = tab.hasAttribute("pending")
+        ? (SessionStore.getLazyTabValue?.(tab, "url") ?? "")
+        : tab.linkedBrowser?.currentURI?.spec ?? "";
+      return !(url && DISPOSABLE.test(url)) && !(url === "" && !tab.hasAttribute("pending"));
+    });
   }
 
   let busy = false;
@@ -53,10 +59,13 @@
       const starter = spaces.find(s => s.uuid === uuid);
       if (!starter) return finish(); // already gone
       if (spaces.length < 2) return; // synced spaces not here yet
-      if (hasRealTabs(uuid)) return finish(); // you're using it, keep it
-      if (gZenWorkspaces.activeWorkspace === uuid) {
-        await gZenWorkspaces.changeWorkspace(spaces.find(s => s.uuid !== uuid));
-      }
+      // a folder can't move tab by tab, so a space holding one stays
+      if (tabsIn(uuid).some(tab => tab.group)) return finish();
+      const target = spaces.find(s => s.uuid !== uuid);
+      const keep = keepers(uuid);
+      if (keep.length) gZenWorkspaces.moveTabsToWorkspace(keep, target.uuid);
+      if (tabsIn(uuid).some(tab => keep.includes(tab))) return finish(); // a tab didn't move, so keep the space
+      if (gZenWorkspaces.activeWorkspace === uuid) await gZenWorkspaces.changeWorkspace(target);
       await gZenWorkspaces.removeWorkspace(uuid);
       finish();
     } catch (e) {

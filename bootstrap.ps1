@@ -143,7 +143,11 @@ function Invoke-ZenCustomSetup {
   }
   foreach ($e in $setup.extensions) {
     $url = "https://addons.mozilla.org/firefox/downloads/latest/$($e.slug)/latest.xpi"
-    if ($e.langpack -and $gecko) { $url = "https://archive.mozilla.org/pub/firefox/releases/$gecko/win64/xpi/$($e.langpack).xpi" }
+    if ($e.langpack -and $gecko) {
+      $exact = "https://archive.mozilla.org/pub/firefox/releases/$gecko/win64/xpi/$($e.langpack).xpi"
+      # betas and release candidates aren't published there; keep the addons.mozilla.org one then
+      try { Invoke-WebRequest -Uri $exact -Method Head -UseBasicParsing | Out-Null; $url = $exact } catch {}
+    }
     $ext[$e.id] = [ordered]@{
       installation_mode = "normal_installed"
       install_url       = $url
@@ -179,7 +183,9 @@ function Invoke-ZenCustomSetup {
       foreach ($p in @(Get-InstallDefaults $ini)) {
         # new to profiles.ini, or (when %APPDATA% survived) started just now
         $compat = Join-Path $p "compatibility.ini"
-        $fresh = (Test-Path $compat) -and (Get-Item $compat).LastWriteTime -ge $started
+        $lock = Join-Path $p "parent.lock"
+        $fresh = ((Test-Path $compat) -and (Get-Item $compat).LastWriteTime -ge $started) -or
+          ((Test-Path $lock) -and (Get-Item $lock).LastWriteTime -ge $started)
         if (($before -notcontains $p -and (Test-Path (Join-Path $p "times.json"))) -or $fresh) { $prof = $p }
       }
     }
@@ -330,9 +336,12 @@ function Invoke-ZenCustomSetup {
       if ($a.store) {
         $ok = $false
         if ($winget) {
-          & $winget.Source install --id $a.store --source msstore --accept-package-agreements --accept-source-agreements --silent --disable-interactivity | Out-Null
-          # 0 = installed; -1978335189 = already installed and up to date
-          $ok = ($LASTEXITCODE -eq 0) -or ($LASTEXITCODE -eq -1978335189)
+          # winget can be there but not set up yet for a new login; then it throws
+          try {
+            & $winget.Source install --id $a.store --source msstore --accept-package-agreements --accept-source-agreements --silent --disable-interactivity | Out-Null
+            # 0 = installed; -1978335189 = no newer version; -1978335135 = already installed
+            $ok = @(0, -1978335189, -1978335135) -contains $LASTEXITCODE
+          } catch { $ok = $false }
         }
         if ($ok) { Note "$($a.name): installed from the Microsoft Store" }
         else {
@@ -343,7 +352,7 @@ function Invoke-ZenCustomSetup {
         $exe = Join-Path $work (($a.name -replace '\W', '') + "-setup.exe")
         Get-File $a.url $exe
         # wait for the installer only (-Wait would also wait for the app it opens)
-        $p = Start-Process $exe -ArgumentList $a.args -PassThru
+        $p = if ($a.args) { Start-Process $exe -ArgumentList $a.args -PassThru } else { Start-Process $exe -PassThru }
         $p.WaitForExit()
         Note "$($a.name): installed"
       }
@@ -359,6 +368,11 @@ function Invoke-ZenCustomSetup {
       # a Google Drive share link -> its direct download
       if ($rcUrl -match 'drive\.google\.com/(?:file/d/|open\?id=)([\w-]+)') { $rcUrl = "https://drive.google.com/uc?export=download&id=$($Matches[1])" }
       Get-File $rcUrl $rc
+      # a sign-in page instead of the file means the link isn't shared publicly
+      if ([IO.File]::ReadAllText($rc).TrimStart().StartsWith("<")) {
+        Remove-Item $rc -Force
+        throw "the Google Drive link asks for a sign-in; set its sharing to 'Anyone with the link'"
+      }
       Note "Raycast settings saved to your desktop: $rc"
       Note "In Raycast, run 'Import Settings & Data' and pick that file."
     } catch { Warn "Couldn't download your Raycast settings: $($_.Exception.Message)" }
