@@ -30,7 +30,11 @@ function Invoke-ZenCustomUpdate {
   # Documents (also when an unzip left the files one folder down, in
   # zen-custom\Zen-custom-main), else a new one there.
   $looksRight = { param($d) Test-Path (Join-Path $d "install\install.ps1") }
-  $nested = { param($d) @(Get-ChildItem $d -Directory -ErrorAction SilentlyContinue | Where-Object { & $looksRight $_.FullName }).Count -gt 0 }
+  # only when that one folder is all there is, so a bigger folder is never wiped
+  $nested = { param($d)
+    $in = @(Get-ChildItem $d -Force -ErrorAction SilentlyContinue | Where-Object { $_.Name -ne "desktop.ini" })
+    $in.Count -eq 1 -and $in[0].PSIsContainer -and (& $looksRight $in[0].FullName)
+  }
   if ($env:ZC_DIR) {
     $target = $env:ZC_DIR
   } else {
@@ -78,6 +82,7 @@ function Invoke-ZenCustomUpdate {
     Step "Updating $target"
     if ($isGit) {
       # a git clone: let git update it rather than copying over its files
+      # (updates the branch that's checked out there; ZC_BRANCH doesn't apply)
       git -C $target pull --ff-only
       if ($LASTEXITCODE -ne 0) { throw "git pull didn't work in $target (see above), so nothing was installed." }
     } else {
@@ -91,12 +96,13 @@ function Invoke-ZenCustomUpdate {
         Note "Old copy kept in $prev"
         # settings captured on this PC that GitHub doesn't have yet
         $mine = Join-Path $target "setup\my-settings.js"
+        if (-not (Test-Path $mine)) { $mine = @(Get-ChildItem $target -Directory | ForEach-Object { Join-Path $_.FullName "setup\my-settings.js" } | Where-Object { Test-Path $_ }) | Select-Object -First 1 }
         $theirs = Join-Path $src "setup\my-settings.js"
         # (GitHub's copy is dated by its last commit, so a newer one here was captured here)
-        if ((Test-Path $mine) -and (Test-Path $theirs) -and
+        if ($mine -and (Test-Path $mine) -and (Test-Path $theirs) -and
             (Get-Item $mine).LastWriteTime -gt (Get-Item $theirs).LastWriteTime -and
             [IO.File]::ReadAllText($mine) -ne [IO.File]::ReadAllText($theirs)) {
-          Write-Host "   Your setup\my-settings.js differs from GitHub's. It's kept in $prev\setup; send it to Claude to push." -ForegroundColor Yellow
+          Write-Host "   Your my-settings.js ($mine) differs from GitHub's. A copy is kept in $prev; send it to Claude to push." -ForegroundColor Yellow
         }
       }
       New-Item -ItemType Directory -Force $target | Out-Null
