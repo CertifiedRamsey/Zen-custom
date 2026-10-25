@@ -355,7 +355,10 @@ function Invoke-ZenCustomSetup {
   if ($setup.raycastConfigUrl) {
     try {
       $rc = Join-Path ([Environment]::GetFolderPath("Desktop")) "Raycast settings.rayconfig"
-      Get-File $setup.raycastConfigUrl $rc
+      $rcUrl = $setup.raycastConfigUrl
+      # a Google Drive share link -> its direct download
+      if ($rcUrl -match 'drive\.google\.com/(?:file/d/|open\?id=)([\w-]+)') { $rcUrl = "https://drive.google.com/uc?export=download&id=$($Matches[1])" }
+      Get-File $rcUrl $rc
       Note "Raycast settings saved to your desktop: $rc"
       Note "In Raycast, run 'Import Settings & Data' and pick that file."
     } catch { Warn "Couldn't download your Raycast settings: $($_.Exception.Message)" }
