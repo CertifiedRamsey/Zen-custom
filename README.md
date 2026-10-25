@@ -117,9 +117,10 @@ irm https://raw.githubusercontent.com/CertifiedRamsey/Zen-custom/main/update.ps1
 
 It downloads the latest version straight into `Documents\zen-custom`
 (set `$env:ZC_DIR` first if yours is elsewhere), closes Zen, runs the
-installer, clears Zen's startup cache and opens Zen again. The old copy is
-kept in `%LOCALAPPDATA%\zen-custom-update\previous` until the next update.
-In a git clone it runs `git pull` instead. The installer never
+installer, clears Zen's startup cache and opens Zen again. The last three
+old copies are kept in `%LOCALAPPDATA%\zen-custom-update`. In a git clone it
+runs `git pull` instead. Sine's mod list shows the installed version as
+zen-custom's version number (the `VERSION` file, bumped with every change). The installer never
 resets a switch you changed in `about:config`; it only adds new ones.
 The installer backs up your old `chrome` files, `user.js`, `prefs.js` and
 Sine's mod list to `<profile>\zen-custom-backup-<date>` each time.
