@@ -1,14 +1,78 @@
 {
-  "_about": "What bootstrap.ps1 installs besides Zen, Sine and zen-custom. Edit and push to change it.",
+  "_about": "What bootstrap.ps1 installs besides Zen, Sine and zen-custom. Edit and push to change it. Add-on 'settings' go to Zen's policies file for add-ons that read them (Temporary Containers Plus, Auto Tab Discard). 'apps': 'store' is a Microsoft Store id (the Store keeps it updated), 'url' a self-updating installer.",
   "sineMods": [
-    { "id": "zia", "name": "Zia", "from": "store" },
-    { "id": "f966100a-4fed-4df5-a082-f001c5bd654e", "name": "Tidy Popup & Extension", "from": "store" },
-    { "id": "ZenLibraryTweaks", "name": "ZenLibraryTweaks", "from": "github", "repo": "JustAdumbPrsn/ZenLibraryTweaks" }
+    {
+      "id": "zia",
+      "name": "Zia",
+      "from": "store"
+    },
+    {
+      "id": "f966100a-4fed-4df5-a082-f001c5bd654e",
+      "name": "Tidy Popup & Extension",
+      "from": "store"
+    },
+    {
+      "id": "ZenLibraryTweaks",
+      "name": "ZenLibraryTweaks",
+      "from": "github",
+      "repo": "JustAdumbPrsn/ZenLibraryTweaks"
+    }
   ],
   "extensions": [
-    { "id": "uBlock0@raymondhill.net", "name": "uBlock Origin", "slug": "ublock-origin" },
-    { "id": "{c2c003ee-bd69-42a2-b0e9-6f34222cb046}", "name": "Auto Tab Discard", "slug": "auto-tab-discard" },
-    { "id": "{1ea2fa75-677e-4702-b06a-50fc7d06fe7e}", "name": "Temporary Containers Plus", "slug": "temporary-containers-plus" },
-    { "id": "langpack-en-GB@firefox.mozilla.org", "name": "English (GB) language pack", "slug": "english-gb-language-pack", "langpack": "en-GB" }
-  ]
+    {
+      "id": "uBlock0@raymondhill.net",
+      "name": "uBlock Origin",
+      "slug": "ublock-origin"
+    },
+    {
+      "id": "{c2c003ee-bd69-42a2-b0e9-6f34222cb046}",
+      "name": "Auto Tab Discard",
+      "slug": "auto-tab-discard",
+      "settings": {
+        "pinned": true,
+        "whitelist": [
+          "notion.so",
+          "notion.site"
+        ]
+      }
+    },
+    {
+      "id": "{1ea2fa75-677e-4702-b06a-50fc7d06fe7e}",
+      "name": "Temporary Containers Plus",
+      "slug": "temporary-containers-plus",
+      "settings": {
+        "preferences": {
+          "container": {
+            "namePrefix": "Patient",
+            "colorRandom": true,
+            "numberMode": "reuse"
+          }
+        },
+        "suppress_first_run_page": true
+      }
+    },
+    {
+      "id": "langpack-en-GB@firefox.mozilla.org",
+      "name": "English (GB) language pack",
+      "slug": "english-gb-language-pack",
+      "langpack": "en-GB"
+    }
+  ],
+  "apps": [
+    {
+      "name": "Raycast",
+      "store": "9PFXXSHC64H3"
+    },
+    {
+      "name": "Blip",
+      "store": "9N7JSXC1SJK6"
+    },
+    {
+      "name": "Notion",
+      "url": "https://www.notion.so/desktop/windows/download",
+      "args": "/S",
+      "check": "%LOCALAPPDATA%\\Programs\\Notion\\Notion.exe"
+    }
+  ],
+  "raycastConfigUrl": ""
 }

@@ -90,7 +90,7 @@ function Invoke-ZenCustomSetup {
   }
 
   # 1. zen-custom itself, as a zip (no Git needed). Everything else is listed in it.
-  Step "1/8 Downloading zen-custom"
+  Step "1/9 Downloading zen-custom"
   $zip = Join-Path $work "zen-custom.zip"
   Get-File "https://codeload.github.com/$repoName/zip/refs/heads/$branch" $zip
   $x = Expand-Zip $zip "zen-custom"
@@ -103,7 +103,7 @@ function Invoke-ZenCustomSetup {
   Note "Saved to $repo"
 
   # 2. Zen. Its installer is a 7-Zip archive; unpacking it ourselves needs no admin.
-  Step "2/8 Getting Zen"
+  Step "2/9 Getting Zen"
   if (Test-Path $zenExe) {
     Note "Zen is already in $zenDir, keeping it (it updates itself)."
   } else {
@@ -131,8 +131,9 @@ function Invoke-ZenCustomSetup {
   }
 
   # 3. Add-ons and quiet first start, through Zen's policies file (in Zen's own folder).
-  Step "3/8 Setting up add-ons"
+  Step "3/9 Setting up add-ons"
   $ext = [ordered]@{}
+  $third = [ordered]@{}
   # Language packs only work on the exact Firefox version Zen is built on.
   $gecko = $null
   $ini2 = Join-Path $zenDir "platform.ini"
@@ -148,15 +149,19 @@ function Invoke-ZenCustomSetup {
       install_url       = $url
     }
     Note $e.name
+    # the add-on's own settings, for add-ons that read them from policies
+    if ($e.settings) { $third[$e.id] = $e.settings }
   }
-  $policies = [ordered]@{ policies = [ordered]@{ DontCheckDefaultBrowser = $true; ExtensionSettings = $ext } }
+  $pol = [ordered]@{ DontCheckDefaultBrowser = $true; ExtensionSettings = $ext }
+  if ($third.Count) { $pol["3rdparty"] = [ordered]@{ Extensions = $third } }
+  $policies = [ordered]@{ policies = $pol }
   $dist = Join-Path $zenDir "distribution"
   New-Item -ItemType Directory -Force $dist | Out-Null
-  [IO.File]::WriteAllText((Join-Path $dist "policies.json"), (ConvertTo-Json -InputObject $policies -Depth 8), $utf8)
+  [IO.File]::WriteAllText((Join-Path $dist "policies.json"), (ConvertTo-Json -InputObject $policies -Depth 16), $utf8)
   Note "They install themselves the first time Zen opens."
 
   # 4. A profile. Zen makes its own on first start, so start it once, hidden.
-  Step "4/8 Making your Zen profile"
+  Step "4/9 Making your Zen profile"
   $zenData = Join-Path $env:APPDATA "zen"
   $ini = Join-Path $zenData "profiles.ini"
   $prof = $null
@@ -197,7 +202,7 @@ function Invoke-ZenCustomSetup {
   Note $prof
 
   # 5. Sine: its loader goes next to zen.exe, its engine into the profile.
-  Step "5/8 Installing Sine"
+  Step "5/9 Installing Sine"
   $engine = Get-Json "https://raw.githubusercontent.com/CosmoCreeper/Sine/main/engine.json"
   $sineVer = $engine.updates[0].version
   $boot = $engine.bootloader
@@ -212,7 +217,7 @@ function Invoke-ZenCustomSetup {
   Note "Sine $sineVer"
 
   # 6. Sine mods, fetched the way Sine's own store does it.
-  Step "6/8 Installing Sine mods"
+  Step "6/9 Installing Sine mods"
   $modsJson = Join-Path $sineMods "mods.json"
   $mods = New-Object PSObject
   if (Test-Path $modsJson) {
@@ -288,7 +293,7 @@ function Invoke-ZenCustomSetup {
   [IO.File]::WriteAllText($modsJson, (ConvertTo-Json -InputObject $mods -Depth 32), $utf8)
 
   # 7. Your settings (Zia's config, the mods', Zen's), written straight into prefs.js.
-  Step "7/8 Restoring your settings"
+  Step "7/9 Restoring your settings"
   $prefsJs = Join-Path $prof "prefs.js"
   $mine = @([IO.File]::ReadAllLines((Join-Path $repo "setup\my-settings.js"), [Text.Encoding]::UTF8) |
       Where-Object { $_ -match '^user_pref\("' })
@@ -305,7 +310,7 @@ function Invoke-ZenCustomSetup {
   Note "$($mine.Count) settings"
 
   # 8. zen-custom's own installer (CSS, scripts, its switches).
-  Step "8/8 Installing zen-custom"
+  Step "8/9 Installing zen-custom"
   # Run in this window rather than as a .ps1 file, which a school's script
   # policy could block (irm | iex isn't affected by it).
   $inst = Join-Path $repo "install"
@@ -314,6 +319,47 @@ function Invoke-ZenCustomSetup {
   $code = $code.Replace('$PSScriptRoot', "'" + $inst.Replace("'", "''") + "'")
   $code = $code.Replace("exit 1", 'throw "Zen is still open."')   # exit would close this window
   & ([scriptblock]::Create($code)) -ProfilePath $prof -Yes
+
+  # 9. Other apps. Each comes from the place where it keeps itself up to date:
+  # Microsoft Store apps update through the Store, the others update themselves.
+  Step "9/9 Installing your other apps"
+  $winget = Get-Command winget -ErrorAction SilentlyContinue
+  foreach ($a in $setup.apps) {
+    try {
+      if ($a.check -and (Test-Path ([Environment]::ExpandEnvironmentVariables($a.check)))) { Note "$($a.name): already installed"; continue }
+      if ($a.store) {
+        $ok = $false
+        if ($winget) {
+          & $winget.Source install --id $a.store --source msstore --accept-package-agreements --accept-source-agreements --silent --disable-interactivity | Out-Null
+          # 0 = installed; -1978335189 = already installed and up to date
+          $ok = ($LASTEXITCODE -eq 0) -or ($LASTEXITCODE -eq -1978335189)
+        }
+        if ($ok) { Note "$($a.name): installed from the Microsoft Store" }
+        else {
+          Start-Process "ms-windows-store://pdp/?ProductId=$($a.store)"
+          Warn "$($a.name): the Microsoft Store page is open, click Get (or Install)."
+        }
+      } elseif ($a.url) {
+        $exe = Join-Path $work (($a.name -replace '\W', '') + "-setup.exe")
+        Get-File $a.url $exe
+        # wait for the installer only (-Wait would also wait for the app it opens)
+        $p = Start-Process $exe -ArgumentList $a.args -PassThru
+        $p.WaitForExit()
+        Note "$($a.name): installed"
+      }
+    } catch {
+      Warn "$($a.name) didn't install: $($_.Exception.Message)"
+    }
+  }
+  # Raycast settings: no Pro, so they travel as an export file.
+  if ($setup.raycastConfigUrl) {
+    try {
+      $rc = Join-Path ([Environment]::GetFolderPath("Desktop")) "Raycast settings.rayconfig"
+      Get-File $setup.raycastConfigUrl $rc
+      Note "Raycast settings saved to your desktop: $rc"
+      Note "In Raycast, run 'Import Settings & Data' and pick that file."
+    } catch { Warn "Couldn't download your Raycast settings: $($_.Exception.Message)" }
+  }
 
   $cache = Join-Path (Join-Path $env:LOCALAPPDATA "zen\Profiles") (Split-Path $prof -Leaf)
   Remove-Item (Join-Path $cache "startupCache") -Recurse -Force -ErrorAction SilentlyContinue

@@ -71,10 +71,17 @@ In a few minutes it:
    ZenLibraryTweaks) the way Sine's store does
 7. Writes your settings from `setup/my-settings.js` (Zia's config, the other
    mods', Zen's, toolbar layout) into the profile
-8. Runs `install/install.ps1` and opens Zen
+8. Runs `install/install.ps1`
+9. Installs the apps in `setup/setup.json`, each from the source that keeps it
+   updated: Raycast and Blip from the Microsoft Store (falls back to opening
+   the Store page if `winget` isn't allowed), Notion from its own
+   self-updating installer. Puts your Raycast export on the desktop if
+   `raycastConfigUrl` is set. Then opens Zen on the Mozilla sign-in page.
 
-Then sign in to your Mozilla account in Zen for bookmarks and passwords.
-Add-on settings (Temporary Containers Plus, Auto Tab Discard) aren't copied.
+Temporary Containers Plus (prefix Patient, random colours, reuse numbers) and
+Auto Tab Discard (keep pinned tabs, never discard Notion) get their settings
+through Zen's policies file. Zen's empty starter space is removed once your
+synced spaces arrive.
 
 Changed your Zia or Zen settings at home? Run this on the home PC, then
 commit and push `setup/my-settings.js`:
