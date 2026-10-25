@@ -8,6 +8,9 @@ param([string]$ProfilePath, [switch]$Yes)
 $ErrorActionPreference = "Stop"
 $repo = Split-Path -Parent $PSScriptRoot
 $utf8 = New-Object System.Text.UTF8Encoding $false   # UTF-8 without a BOM
+# Windows PowerShell 5.1 can write arrays as {"value":[...],"Count":n} without this,
+# which would garble other mods' entries in Sine's mods.json.
+Remove-TypeData System.Array -ErrorAction SilentlyContinue
 . (Join-Path $PSScriptRoot "find-profile.ps1")
 
 # only this login's Zen (a shared PC can show other people's too)
