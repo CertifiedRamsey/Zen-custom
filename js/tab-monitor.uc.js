@@ -10,6 +10,13 @@
 (() => {
   "use strict";
 
+  // Sine can run a script twice in the same window; the second copy would add
+  // its buttons and key handlers again.
+  // The mark goes on the window's root element, which every copy can see.
+  const loadedMark = "zc-loaded-tabMonitor";
+  if (document.documentElement.hasAttribute(loadedMark)) return;
+  document.documentElement.setAttribute(loadedMark, "");
+
   const PREF = "zen-custom.tab-monitor";
   const REFRESH_MS = 2000;
   const HEAVY_MB = 500;

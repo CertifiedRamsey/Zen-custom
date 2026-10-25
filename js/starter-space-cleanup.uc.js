@@ -15,6 +15,13 @@
 (() => {
   "use strict";
 
+  // Sine can run a script twice in the same window; the second copy would
+  // watch for the starter space twice. The mark goes on the window's root
+  // element, which every copy can see.
+  const loadedMark = "zc-loaded-starterCleanup";
+  if (document.documentElement.hasAttribute(loadedMark)) return;
+  document.documentElement.setAttribute(loadedMark, "");
+
   const ON_PREF = "zen-custom.starter-space-cleanup";
   const ID_PREF = "zen-custom.starter-space";
   const EMPTY_URLS = ["about:blank", "about:newtab", "about:home"];

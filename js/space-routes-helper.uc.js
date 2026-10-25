@@ -10,6 +10,13 @@
 // this script.
 
 (() => {
+  // Sine can run a script twice in the same window; the second copy would add
+  // its buttons and key handlers again.
+  // The mark goes on the window's root element, which every copy can see.
+  const loadedMark = "zc-loaded-routesHelper";
+  if (document.documentElement.hasAttribute(loadedMark)) return;
+  document.documentElement.setAttribute(loadedMark, "");
+
   const PREF = "zen-custom.routes-helper";
   const HTML_NS = "http://www.w3.org/1999/xhtml";
   const MOST_RECENT = "most-recent-space";

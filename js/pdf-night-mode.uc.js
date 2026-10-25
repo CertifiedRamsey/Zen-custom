@@ -14,6 +14,13 @@
 (() => {
   "use strict";
 
+  // Sine can run a script twice in the same window; the second copy would add
+  // its buttons and key handlers again (two moons, Alt+N toggling twice).
+  // The mark goes on the window's root element, which every copy can see.
+  const loadedMark = "zc-loaded-pdfNight";
+  if (document.documentElement.hasAttribute(loadedMark)) return;
+  document.documentElement.setAttribute(loadedMark, "");
+
   const PREF = "zen-custom.pdf-night";
   const ON = "zen-custom.pdf-night.on";
   const STRENGTH = "zen-custom.pdf-night.strength";
