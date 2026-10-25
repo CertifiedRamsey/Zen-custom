@@ -10,7 +10,9 @@ $repo = Split-Path -Parent $PSScriptRoot
 $utf8 = New-Object System.Text.UTF8Encoding $false   # UTF-8 without a BOM
 . (Join-Path $PSScriptRoot "find-profile.ps1")
 
-if (Get-Process zen -ErrorAction SilentlyContinue) {
+# only this login's Zen (a shared PC can show other people's too)
+$mySession = (Get-Process -Id $PID).SessionId
+if (Get-Process zen -ErrorAction SilentlyContinue | Where-Object { $_.SessionId -eq $mySession }) {
   Write-Host "Please close Zen first, then run this again." -ForegroundColor Yellow
   exit 1
 }

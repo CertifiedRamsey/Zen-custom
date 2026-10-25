@@ -11,10 +11,17 @@
 #   $env:ZC_BRANCH = "some-branch"; irm https://raw.githubusercontent.com/CertifiedRamsey/Zen-custom/some-branch/bootstrap.ps1 | iex
 
 function Invoke-ZenCustomSetup {
+  if ($ExecutionContext.SessionState.LanguageMode -ne "FullLanguage") {
+    throw "This PC runs PowerShell in a locked-down mode ($($ExecutionContext.SessionState.LanguageMode)), so the setup can't run here."
+  }
   $ErrorActionPreference = "Stop"
   $ProgressPreference = "SilentlyContinue"   # Windows PowerShell downloads crawl with the progress bar on
   [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
   $utf8 = New-Object System.Text.UTF8Encoding $false
+  Add-Type -AssemblyName System.IO.Compression.FileSystem
+  # Windows PowerShell 5.1 can write arrays as {"value":[...],"Count":n} without this.
+  Remove-TypeData System.Array -ErrorAction SilentlyContinue
+  $mySession = (Get-Process -Id $PID).SessionId
 
   $repoName = "CertifiedRamsey/Zen-custom"
   $branch = if ($env:ZC_BRANCH) { $env:ZC_BRANCH } else { "main" }
@@ -47,11 +54,13 @@ function Invoke-ZenCustomSetup {
   function Expand-Zip([string]$zip, [string]$name) {
     $d = Join-Path $work $name
     if (Test-Path $d) { Remove-Item $d -Recurse -Force }
-    Expand-Archive -LiteralPath $zip -DestinationPath $d -Force
+    [IO.Compression.ZipFile]::ExtractToDirectory($zip, $d)
     return $d
   }
+  # Zen windows of this login only; a shared PC can show other people's.
+  function Get-MyZen { @(Get-Process zen -ErrorAction SilentlyContinue | Where-Object { $_.SessionId -eq $mySession }) }
   function Stop-Zen {
-    $p = @(Get-Process zen -ErrorAction SilentlyContinue)
+    $p = Get-MyZen
     if ($p.Count) {
       $p | Stop-Process -Force
       Start-Sleep -Seconds 2
@@ -74,7 +83,7 @@ function Invoke-ZenCustomSetup {
   }
 
   Write-Host "zen-custom setup ($branch). Takes a few minutes; leave this window open." -ForegroundColor Green
-  if (Get-Process zen -ErrorAction SilentlyContinue) {
+  if ((Get-MyZen).Count) {
     Warn "Zen is open. Closing it in 5 seconds (press Ctrl+C to stop)..."
     Start-Sleep -Seconds 5
     Stop-Zen
@@ -124,10 +133,19 @@ function Invoke-ZenCustomSetup {
   # 3. Add-ons and quiet first start, through Zen's policies file (in Zen's own folder).
   Step "3/8 Setting up add-ons"
   $ext = [ordered]@{}
+  # Language packs only work on the exact Firefox version Zen is built on.
+  $gecko = $null
+  $ini2 = Join-Path $zenDir "platform.ini"
+  if (Test-Path $ini2) {
+    $mm = Select-String -Path $ini2 -Pattern '^Milestone=(.+)$' | Select-Object -First 1
+    if ($mm) { $gecko = $mm.Matches[0].Groups[1].Value.Trim() }
+  }
   foreach ($e in $setup.extensions) {
+    $url = "https://addons.mozilla.org/firefox/downloads/latest/$($e.slug)/latest.xpi"
+    if ($e.langpack -and $gecko) { $url = "https://archive.mozilla.org/pub/firefox/releases/$gecko/win64/xpi/$($e.langpack).xpi" }
     $ext[$e.id] = [ordered]@{
       installation_mode = "normal_installed"
-      install_url       = "https://addons.mozilla.org/firefox/downloads/latest/$($e.slug)/latest.xpi"
+      install_url       = $url
     }
     Note $e.name
   }
@@ -142,6 +160,7 @@ function Invoke-ZenCustomSetup {
   $zenData = Join-Path $env:APPDATA "zen"
   $ini = Join-Path $zenData "profiles.ini"
   $prof = $null
+  $newProfile = $false
   if (Test-Path $marker) {
     $p = [IO.File]::ReadAllText($marker).Trim()
     if ($p -and (Test-Path $p)) { $prof = $p; Note "Using the profile from last time." }
@@ -153,7 +172,10 @@ function Invoke-ZenCustomSetup {
     while ((Get-Date) -lt $deadline -and -not $prof) {
       Start-Sleep -Seconds 2
       foreach ($p in @(Get-InstallDefaults $ini)) {
-        if ($before -notcontains $p -and (Test-Path (Join-Path $p "times.json"))) { $prof = $p }
+        # new to profiles.ini, or (when %APPDATA% survived) started just now
+        $compat = Join-Path $p "compatibility.ini"
+        $fresh = (Test-Path $compat) -and (Get-Item $compat).LastWriteTime -ge $started
+        if (($before -notcontains $p -and (Test-Path (Join-Path $p "times.json"))) -or $fresh) { $prof = $p }
       }
     }
     Start-Sleep -Seconds 3
@@ -166,6 +188,7 @@ function Invoke-ZenCustomSetup {
     }
     if (-not $prof) { throw "Zen didn't make a profile. Open Zen once, close it, and run this again." }
     [IO.File]::WriteAllText($marker, $prof, $utf8)
+    $newProfile = $before -notcontains $prof
   }
   $prof = (Resolve-Path $prof).Path
   $chrome = Join-Path $prof "chrome"
@@ -216,7 +239,8 @@ function Invoke-ZenCustomSetup {
       Get-File "https://codeload.github.com/$owner/$name/zip/$ref" $z
       $src = @(Get-ChildItem (Expand-Zip $z "mod-$($m.id)") -Directory)[0].FullName
       if ($folder) { $src = Join-Path $src ($folder -replace '/', '\') }
-      $dest = Join-Path $sineMods $m.id
+      $id = if ($data.id) { $data.id } else { $m.id }   # Sine finds a mod's folder by its id
+      $dest = Join-Path $sineMods $id
       if (Test-Path $dest) { Remove-Item $dest -Recurse -Force }
       Copy-Item $src $dest -Recurse
 
@@ -247,13 +271,14 @@ function Invoke-ZenCustomSetup {
       $prefsFile = & $findFile $data.preferences @("preferences.json")
 
       $entry = $data
+      if (-not $entry.id) { $entry | Add-Member -NotePropertyName id -NotePropertyValue $m.id -Force }
       $entry | Add-Member -NotePropertyName style -NotePropertyValue $style -Force
       $entry | Add-Member -NotePropertyName preferences -NotePropertyValue $prefsFile -Force
       if ($m.from -eq "store") { $entry | Add-Member -NotePropertyName origin -NotePropertyValue "store" -Force }
       elseif ($entry.PSObject.Properties["origin"]) { $entry.PSObject.Properties.Remove("origin") }
       $entry | Add-Member -NotePropertyName "no-updates" -NotePropertyValue $false -Force
       $entry | Add-Member -NotePropertyName enabled -NotePropertyValue $true -Force
-      $mods | Add-Member -NotePropertyName $m.id -NotePropertyValue $entry -Force
+      $mods | Add-Member -NotePropertyName $entry.id -NotePropertyValue $entry -Force
       $ver = if ($data.version) { " $($data.version)" } else { "" }
       Note "$($m.name)$ver"
     } catch {
@@ -267,6 +292,8 @@ function Invoke-ZenCustomSetup {
   $prefsJs = Join-Path $prof "prefs.js"
   $mine = @([IO.File]::ReadAllLines((Join-Path $repo "setup\my-settings.js"), [Text.Encoding]::UTF8) |
       Where-Object { $_ -match '^user_pref\("' })
+  # New profile: let zen-custom remove Zen's empty starter space once your synced spaces arrive.
+  if ($newProfile) { $mine += 'user_pref("zen-custom.starter-space-cleanup", true);' }
   $names = @{}
   foreach ($l in $mine) { if ($l -match '^user_pref\("([^"]+)"') { $names[$Matches[1]] = $true } }
   $old = @()
@@ -279,10 +306,14 @@ function Invoke-ZenCustomSetup {
 
   # 8. zen-custom's own installer (CSS, scripts, its switches).
   Step "8/8 Installing zen-custom"
-  $ps = Join-Path $PSHOME "powershell.exe"
-  if (-not (Test-Path $ps)) { $ps = "powershell.exe" }
-  & $ps -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "install\install.ps1") -ProfilePath $prof -Yes
-  if ($LASTEXITCODE) { throw "zen-custom's installer stopped (exit code $LASTEXITCODE)." }
+  # Run in this window rather than as a .ps1 file, which a school's script
+  # policy could block (irm | iex isn't affected by it).
+  $inst = Join-Path $repo "install"
+  $code = [IO.File]::ReadAllText((Join-Path $inst "install.ps1"), [Text.Encoding]::UTF8)
+  $code = $code.Replace('. (Join-Path $PSScriptRoot "find-profile.ps1")', [IO.File]::ReadAllText((Join-Path $inst "find-profile.ps1"), [Text.Encoding]::UTF8))
+  $code = $code.Replace('$PSScriptRoot', "'" + $inst.Replace("'", "''") + "'")
+  $code = $code.Replace("exit 1", 'throw "Zen is still open."')   # exit would close this window
+  & ([scriptblock]::Create($code)) -ProfilePath $prof -Yes
 
   $cache = Join-Path (Join-Path $env:LOCALAPPDATA "zen\Profiles") (Split-Path $prof -Leaf)
   Remove-Item (Join-Path $cache "startupCache") -Recurse -Force -ErrorAction SilentlyContinue
@@ -291,8 +322,9 @@ function Invoke-ZenCustomSetup {
   $mins = [math]::Round(((Get-Date) - $started).TotalMinutes, 1)
   Write-Host ""
   Write-Host "All done in $mins min. Opening Zen..." -ForegroundColor Green
-  Write-Host "Sign in to your Mozilla account in Zen to bring back bookmarks and passwords."
-  Start-Process $zenExe
+  Write-Host "Sign in to your Mozilla account on the page that opens, to bring back your spaces,"
+  Write-Host "bookmarks and passwords. Zen's empty starter space goes away once your spaces arrive."
+  Start-Process $zenExe -ArgumentList "about:preferences#sync"
 }
 
 try { Invoke-ZenCustomSetup }
