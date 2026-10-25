@@ -1,0 +1,14 @@
+{
+  "_about": "What bootstrap.ps1 installs besides Zen, Sine and zen-custom. Edit and push to change it.",
+  "sineMods": [
+    { "id": "zia", "name": "Zia", "from": "store" },
+    { "id": "f966100a-4fed-4df5-a082-f001c5bd654e", "name": "Tidy Popup & Extension", "from": "store" },
+    { "id": "ZenLibraryTweaks", "name": "ZenLibraryTweaks", "from": "github", "repo": "JustAdumbPrsn/ZenLibraryTweaks" }
+  ],
+  "extensions": [
+    { "id": "uBlock0@raymondhill.net", "name": "uBlock Origin", "slug": "ublock-origin" },
+    { "id": "{c2c003ee-bd69-42a2-b0e9-6f34222cb046}", "name": "Auto Tab Discard", "slug": "auto-tab-discard" },
+    { "id": "{1ea2fa75-677e-4702-b06a-50fc7d06fe7e}", "name": "Temporary Containers Plus", "slug": "temporary-containers-plus" },
+    { "id": "langpack-en-GB@firefox.mozilla.org", "name": "English (GB) language pack", "slug": "english-gb-language-pack" }
+  ]
+}

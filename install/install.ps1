@@ -2,7 +2,8 @@
 # Usage (from the repo folder, with Zen CLOSED):
 #   powershell -ExecutionPolicy Bypass -File .\install\install.ps1
 # Optional: -ProfilePath "C:\Users\you\AppData\Roaming\zen\Profiles\abc.Default (release)"
-param([string]$ProfilePath)
+# -Yes answers yes to its one question (used by bootstrap.ps1).
+param([string]$ProfilePath, [switch]$Yes)
 
 $ErrorActionPreference = "Stop"
 $repo = Split-Path -Parent $PSScriptRoot
@@ -120,7 +121,7 @@ if ($scriptsReady -and $prefsText -notmatch 'user_pref\("sine\.allow-unsafe-js",
   Write-Host "runs scripts that don't come from its own store when its setting"
   Write-Host "'Enable installing JS from unofficial sources' is on."
   Write-Host "These are your own scripts from this repo."
-  $answer = Read-Host "Turn that setting on now? [Y/n]"
+  $answer = if ($Yes) { "y" } else { Read-Host "Turn that setting on now? [Y/n]" }
   if ($answer -notmatch '^\s*n') {
     $add += 'user_pref("sine.allow-unsafe-js", true);'
   } else {
