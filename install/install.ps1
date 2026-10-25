@@ -8,6 +8,10 @@ param([string]$ProfilePath, [switch]$Yes)
 $ErrorActionPreference = "Stop"
 $repo = Split-Path -Parent $PSScriptRoot
 $utf8 = New-Object System.Text.UTF8Encoding $false   # UTF-8 without a BOM
+# Bump VERSION with every change, so Sine's mod list shows which one is installed.
+$version = "0.0.0"
+$vf = Join-Path $repo "VERSION"
+if (Test-Path $vf) { $version = ([IO.File]::ReadAllText($vf)).Trim() }
 # Windows PowerShell 5.1 can write arrays as {"value":[...],"Count":n} without this,
 # which would garble other mods' entries in Sine's mods.json.
 Remove-TypeData System.Array -ErrorAction SilentlyContinue
@@ -89,7 +93,7 @@ if ($scripts.Count -and -not $sineHere) {
       id           = "zen-custom"
       name         = "zen-custom"
       description  = "Routes, Tab Monitor, Ctrl+Tab switcher, Folder style and PDF night mode from the zen-custom repo. Its installer keeps this up to date."
-      version      = "1.0.0"
+      version      = $version
       updatedAt    = (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", [Globalization.CultureInfo]::InvariantCulture)
       scripts      = $entryScripts
       enabled      = $true
@@ -161,5 +165,5 @@ if (Test-Path $uj) {
 $keep += 'user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true); // zen-custom'
 [IO.File]::WriteAllText($uj, ($keep -join "`r`n") + "`r`n", $utf8)
 
-Write-Host "Done. Open Zen to see the changes." -ForegroundColor Green
+Write-Host "Done: zen-custom $version. Open Zen to see the changes." -ForegroundColor Green
 Write-Host "Once it looks right, run: powershell -ExecutionPolicy Bypass -File .\install\check.ps1 -MarkGood"
