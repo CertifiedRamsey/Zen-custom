@@ -47,6 +47,49 @@ Each one can be switched off live in `about:config`:
 
 Colors, radius and spacing live in `chrome/zen-custom/modules/tokens.css`.
 
+## Set up a new PC in one command
+
+For a PC that starts empty (like the work desktop, which resets at every
+login). No admin rights, no Git. Open **PowerShell** (Start, type
+`PowerShell`, Enter) and paste:
+
+```powershell
+irm https://raw.githubusercontent.com/CertifiedRamsey/Zen-custom/main/bootstrap.ps1 | iex
+```
+
+In a few minutes it:
+
+1. Downloads this repo as a zip (kept in `%LOCALAPPDATA%\zen-custom`)
+2. Unpacks the latest Zen into `%LOCALAPPDATA%\Zen Browser` and adds desktop
+   and Start menu shortcuts
+3. Lists the add-ons in `setup/setup.json` (uBlock Origin, Auto Tab Discard,
+   Temporary Containers Plus, English GB) in Zen's policies file, so Zen
+   installs them when it opens
+4. Lets Zen make its profile (one hidden start)
+5. Installs Sine
+6. Installs the Sine mods in `setup/setup.json` (Zia, Tidy Popup & Extension,
+   ZenLibraryTweaks) the way Sine's store does
+7. Writes your settings from `setup/my-settings.js` (Zia's config, the other
+   mods', Zen's, toolbar layout) into the profile
+8. Runs `install/install.ps1`
+9. Installs the apps in `setup/setup.json`, each from the source that keeps it
+   updated: Raycast and Blip from the Microsoft Store (falls back to opening
+   the Store page if `winget` isn't allowed), Notion from its own
+   self-updating installer. Puts your Raycast export on the desktop if
+   `raycastConfigUrl` is set. Then opens Zen on the Mozilla sign-in page.
+
+Temporary Containers Plus (prefix Patient, random colours, reuse numbers) and
+Auto Tab Discard (keep pinned tabs, never discard Notion) get their settings
+through Zen's policies file. Zen's empty starter space is removed once your
+synced spaces arrive.
+
+Changed your Zia or Zen settings at home? Run this on the home PC, then
+commit and push `setup/my-settings.js`:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\setup\capture-settings.ps1
+```
+
 ## Install on Windows x64
 
 1. Install [Git for Windows](https://git-scm.com/download/win) if you don't have it.
