@@ -30,7 +30,3 @@ installer asks.
 - `pdf-night-mode.uc.js`: night mode for the built-in PDF viewer. Alt+N, the
   moon in the address bar, or right-click > Night mode for PDFs. Remembered
   across PDFs. Toggle: `zen-custom.pdf-night` (plus `.strength`).
-- `starter-space-cleanup.uc.js`: on a PC set up by `bootstrap.ps1`, removes
-  the empty space Zen makes on its first start once your synced spaces arrive
-  (only if you haven't put tabs in it), then switches itself off. Existing
-  profiles are never touched. Toggle: `zen-custom.starter-space-cleanup`.
