@@ -80,8 +80,9 @@ In a few minutes it:
 
 Temporary Containers Plus (prefix Patient, random colours, reuse numbers) and
 Auto Tab Discard (keep pinned tabs, never discard Notion) get their settings
-through Zen's policies file. Zen's empty starter space is removed once your
-synced spaces arrive.
+through Zen's policies file. Once your synced spaces arrive, delete Zen's
+empty starter space by hand if you don't want it (nothing deletes spaces for
+you: a deleted space is deleted on every synced PC).
 
 Changed your Zia or Zen settings at home? Run this on the home PC, then
 commit and push `setup/my-settings.js`:

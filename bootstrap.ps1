@@ -303,8 +303,6 @@ function Invoke-ZenCustomSetup {
   $prefsJs = Join-Path $prof "prefs.js"
   $mine = @([IO.File]::ReadAllLines((Join-Path $repo "setup\my-settings.js"), [Text.Encoding]::UTF8) |
       Where-Object { $_ -match '^user_pref\("' })
-  # New profile: let zen-custom remove Zen's empty starter space once your synced spaces arrive.
-  if ($newProfile) { $mine += 'user_pref("zen-custom.starter-space-cleanup", true);' }
   $names = @{}
   foreach ($l in $mine) { if ($l -match '^user_pref\("([^"]+)"') { $names[$Matches[1]] = $true } }
   $old = @()
@@ -386,7 +384,8 @@ function Invoke-ZenCustomSetup {
   Write-Host ""
   Write-Host "All done in $mins min. Opening Zen..." -ForegroundColor Green
   Write-Host "Sign in to your Mozilla account on the page that opens, to bring back your spaces,"
-  Write-Host "bookmarks and passwords. Zen's empty starter space goes away once your spaces arrive."
+  Write-Host "bookmarks and passwords. Once your spaces arrive, delete Zen's empty starter space"
+  Write-Host "yourself (right-click it > Delete) if you don't want it."
   Start-Process $zenExe -ArgumentList "about:preferences#sync"
 }
 
