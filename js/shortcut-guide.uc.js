@@ -297,6 +297,8 @@
     cmd.doCommand();
   };
   const command = id => ({ ok: () => hasCommand(id), run: () => runCommand(id) });
+  // not in windows where Zen has spaces off (private, unsynced)
+  const spacesOn = how => ({ ...how, ok: () => how.ok() && !window.gZenWorkspaces?.privateWindowOrDisabled });
 
   // Zen's settings window (Zen 1.24+), optionally on one page of it
   function zenSettings() {
@@ -333,7 +335,7 @@
   async function newContainer() {
     const settings = zenSettings();
     const win = settings.open("containers");
-    for (let i = 0; i < 40; i++) { // up to 4 s while the window loads
+    for (let i = 0; i < 150; i++) { // up to 15 s while the window loads
       const add = win.document?.readyState === "complete" && win.gZenSettingsWindow &&
         win.document.querySelector('[data-action="containers-add"]');
       if (add) {
@@ -342,7 +344,7 @@
       }
       await new Promise(r => setTimeout(r, 100));
     }
-    throw new Error("Zen's Containers page has no add button");
+    throw new Error("Zen's Containers page didn't finish opening");
   }
 
   // Zia opens its settings only from the "Zia Settings" item it adds to the
@@ -409,9 +411,10 @@
       ["Open", "Restart Zen", "restart relaunch reboot", { ok: always, run: restartZen, confirm: "Press Enter or click again to restart Zen" }],
 
       ["Spaces and containers", "New space", "new space create workspace", command("cmd_zenOpenWorkspaceCreation")],
-      ["Spaces and containers", "Rename this space", "rename space name workspace", command("cmd_zenChangeWorkspaceName")],
-      ["Spaces and containers", "Change this space's icon", "space icon emoji workspace", command("cmd_zenChangeWorkspaceIcon")],
-      ["Spaces and containers", "All spaces (Library)", "manage spaces workspaces library", command("cmd_zenManageWorkspaces")],
+      ["Spaces and containers", "Rename this space", "rename space name workspace", spacesOn(command("cmd_zenChangeWorkspaceName"))],
+      ["Spaces and containers", "Change this space's icon", "space icon emoji workspace", spacesOn(command("cmd_zenChangeWorkspaceIcon"))],
+      ["Spaces and containers", "All spaces (Library)", "manage spaces workspaces library", { ...command("cmd_zenManageWorkspaces"),
+        ok: () => hasCommand("cmd_zenManageWorkspaces") && Services.prefs.getBoolPref("zen.library.enabled", true) }],
       ["Spaces and containers", "Space routing (which sites open in which space)", "space routing routes rules", command("cmd_zenOpenSpaceRoutingSettings")],
       ["Spaces and containers", "New folder", "new folder group", command("cmd_zenOpenFolderCreation")],
       ["Spaces and containers", "Containers (edit, reorder, delete)", "containers manage edit settings", { ok: () => containersOn() && !!zenSettings(), run: () => zenSettings().open("containers") }],
@@ -620,8 +623,15 @@
       Promise.resolve().then(row._zcRun).catch(e => {
         console.error("[zen-custom shortcut guide] Couldn't open", title, e);
         // say so, instead of quietly doing nothing
-        lastError = `Couldn't open “${title}” (${e?.message || e}). Tell Claude.`;
-        open();
+        const msg = `Couldn't open “${title}” (${e?.message || e}). Tell Claude.`;
+        const foot = overlay?.querySelector(".foot");
+        if (foot) { // the guide was opened again meanwhile
+          foot.textContent = msg;
+          foot.classList.add("bad");
+        } else {
+          lastError = msg;
+          open();
+        }
       });
     };
     for (const s of sections) {
@@ -649,7 +659,7 @@
           row.append(el("span", "go", "Open ↵"));
           row._zcRun = k.run;
           row._zcConfirm = k.confirm;
-          // what Enter may pick on its own: words that start with what you type
+          // what Enter may pick on its own (see filter)
           row._zcWords = (k.pick ?? `${k.title} ${k.also ?? ""}`).toLowerCase().split(/[^\p{L}\p{N}:+-]+/u).filter(Boolean);
           row.addEventListener("click", () => run(row));
           row.addEventListener("mousemove", () => { if (sel !== row) select(row, false); });
@@ -702,14 +712,12 @@
       count.textContent = words.length ? `${shown} found` : `${rows.length - acts.length} shortcuts`;
       // Enter opens the first item whose words start with what you typed;
       // never Restart, and nothing before you type
-      // (a whole-word match beats a start: "work" picks the Work container)
-      let pick = null, best = 0;
+      // and only when every word is a whole word of it, or it's the only one
+      // left ("tab" alone, searching for tab shortcuts, picks nothing)
+      let pick = null;
       if (!keyQuery && words.length) {
-        for (const r of shownActs()) {
-          if (r._zcConfirm || !words.every(w => r._zcWords.some(x => x.startsWith(w)))) continue;
-          const score = 1 + words.filter(w => r._zcWords.includes(w)).length;
-          if (score > best) { best = score; pick = r; }
-        }
+        const fits = shownActs().filter(r => !r._zcConfirm && words.every(w => r._zcWords.some(x => x.startsWith(w))));
+        pick = fits.find(r => words.every(w => r._zcWords.includes(w))) ?? (fits.length === 1 ? fits[0] : null);
       }
       select(pick, false);
     };
