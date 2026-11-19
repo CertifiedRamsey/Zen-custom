@@ -87,7 +87,14 @@
     if (pref("zen-custom.pdf-night")) {
       list.push(["Night mode for PDFs", "Alt+N"]);
     }
-    return list.map(([title, shortcut]) => ({ title, shortcut }));
+    if (pref("zen-custom.fake-terminal")) {
+      list.push(["Fake coding screen over Zen (screensaver)", "Ctrl+Alt+L"],
+        ["Leave the fake coding screen", "Ctrl+T"]);
+    }
+    const rows = list.map(([title, shortcut]) => ({ title, shortcut }));
+    // typed in PowerShell rather than pressed; a click copies it
+    rows.push({ title: "Fake coding screensaver in PowerShell (click to copy, Ctrl+T ends it)", shortcut: "zen ss", copy: "zen ss" });
+    return rows;
   }
 
   // Zia's shortcuts, only those switched on in Zia's settings ("zia-js" on
@@ -328,7 +335,7 @@
     [/location/, "address bar url"], [/reload/, "refresh"], [/reopen/, "restore undo close"],
     [/split view/, "split screen"], [/private/, "incognito"], [/full screen/, "fullscreen"],
     [/developer|inspector|console/, "devtools dev tools inspect"], [/mute/, "sound audio"],
-    [/glance/, "preview peek"], [/\besc\b/, "escape"], [/[←→↑↓]/, "arrow"],
+    [/glance/, "preview peek"], [/fake coding|screensaver/, "screensaver screen saver hide away lock terminal"], [/\besc\b/, "escape"], [/[←→↑↓]/, "arrow"],
   ];
   const MODS = new Set(["ctrl", "alt", "shift"]);
   const KEY_ALIAS = { escape: "esc", comma: ",", period: ".", plus: "+", minus: "-", left: "←", right: "→",
@@ -411,6 +418,17 @@
         row._zcFind = hay + ALSO.filter(([re]) => re.test(hay)).map(([, w]) => " " + w).join("");
         row._zcCaps = k.shortcut.toLowerCase().replace(/^hold /, "").split(/\+(?!$)/);
         row.title = k.title;
+        if (k.copy) {
+          row.style.cursor = "pointer";
+          row.addEventListener("click", () => {
+            try {
+              Cc["@mozilla.org/widget/clipboardhelper;1"].getService(Ci.nsIClipboardHelper).copyString(k.copy);
+              t.firstChild.textContent = "Copied. Paste it into PowerShell and press Enter.";
+            } catch (e) {
+              console.error("[zen-custom shortcut guide] Couldn't copy:", e);
+            }
+          });
+        }
         sec.append(row);
         rows.push(row);
       }
