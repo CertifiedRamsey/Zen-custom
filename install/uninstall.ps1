@@ -47,6 +47,19 @@ foreach ($n in "space-routes-helper.uc.js", "tab-monitor.uc.js", "ctrl-tab-switc
   Remove-Item (Join-Path (Join-Path $chrome "JS") $n) -Force -ErrorAction SilentlyContinue
 }
 
+# The "zen" command
+$cmdDir = Join-Path $env:LOCALAPPDATA "zen-custom-cmd"
+Remove-Item $cmdDir -Recurse -Force -ErrorAction SilentlyContinue
+$envKey = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey("Environment", $true)
+$userPath = [string]$envKey.GetValue("Path", "", [Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames)
+$rest = @($userPath -split ";" | Where-Object { $_ -and $_.TrimEnd('\') -ine $cmdDir })
+if ($userPath -and $rest.Count -ne @($userPath -split ";" | Where-Object { $_ }).Count) {
+  $envKey.SetValue("Path", ($rest -join ";"), [Microsoft.Win32.RegistryValueKind]::ExpandString)
+  [Environment]::SetEnvironmentVariable("ZEN_CUSTOM_PATH_REFRESH", "1", "User")
+  [Environment]::SetEnvironmentVariable("ZEN_CUSTOM_PATH_REFRESH", $null, "User")
+}
+$envKey.Close()
+
 # The switches: our lines in user.js and our prefs in prefs.js
 $uj = Join-Path $ProfilePath "user.js"
 if (Test-Path $uj) {
