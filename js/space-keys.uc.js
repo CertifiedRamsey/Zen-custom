@@ -91,6 +91,8 @@
     // it's open, and Ctrl+Alt is still held after Ctrl+Alt+Space opened it.
     // Script load order isn't guaranteed, so don't rely on it eating them first.
     if ("step" in a && document.getElementById("zcts")?.hidden === false) return;
+    // Alt+Shift+digit for a space that doesn't exist is left alone.
+    if ("send" in a && !canSendTo(a.send)) return;
     e.preventDefault();
     e.stopImmediatePropagation();
     if (e.repeat || e.timeStamp === lastStamp) return;
@@ -113,6 +115,11 @@
 
   // ---------- send the tab to a space ----------
 
+  function canSendTo(index) {
+    const ws = window.gZenWorkspaces;
+    return !!ws && !ws.privateWindowOrDisabled && !!ws.getWorkspaces()?.[index];
+  }
+
   async function sendTabs(index) {
     const ws = window.gZenWorkspaces;
     const target = ws?.getWorkspaces()?.[index];
@@ -121,15 +128,19 @@
       flash(target, "Already here");
       return;
     }
-    // Essentials belong to every space, so Zen doesn't move them.
-    const tabs = gBrowser.selectedTabs.filter(t => !t.hasAttribute("zen-essential"));
+    // While a Glance is open the selected tab is the Glance itself; move the
+    // tab it belongs to, as Zen's menu does. Essentials belong to every space
+    // and Zen's placeholder tab in an empty space belongs to none, so skip both.
+    const glance = window.gZenGlanceManager;
+    const tabs = [...new Set(gBrowser.selectedTabs.map(t => glance?.getTabOrGlanceParent?.(t) ?? t))]
+      .filter(t => !t.hasAttribute("zen-essential") && !t.hasAttribute("zen-empty-tab"));
     if (!tabs.length) return;
     try {
-      ws.moveTabsToWorkspace(tabs, target.uuid);
+      ws.moveTabsToWorkspace([...tabs], target.uuid); // Zen may reverse the list it's given
       // land on the moved tab, as Zen's own Move to space does
       if (ws.lastSelectedWorkspaceTabs) {
         const last = tabs[tabs.length - 1];
-        ws.lastSelectedWorkspaceTabs[target.uuid] = window.gZenGlanceManager?.getTabOrGlanceParent?.(last) ?? last;
+        ws.lastSelectedWorkspaceTabs[target.uuid] = last;
       }
       await ws.changeWorkspace(target);
       flash(target, tabs.length > 1 ? `Moved ${tabs.length} tabs` : "Moved here");
@@ -191,23 +202,43 @@
   // ---------- number badges while Alt is held ----------
 
   // Shown after a short hold, so a quick Alt+key doesn't make them blink.
+  // Shift doesn't count as another key, so the numbers stay up while you aim
+  // Alt+Shift+number at a space.
   let badgeTimer = 0;
+  let badgesShown = false;
   const root = document.documentElement;
   function hideBadges() {
     clearTimeout(badgeTimer);
     root.removeAttribute("zc-alt-held");
   }
   window.addEventListener("keydown", e => {
-    if (e.key !== "Alt" || e.repeat) {
-      if (e.key !== "Alt") hideBadges();
+    if (e.key === "Shift") return;
+    if (e.key !== "Alt") {
+      hideBadges();
+      badgesShown = false;
       return;
     }
-    if (e.ctrlKey || e.shiftKey || e.metaKey || e.getModifierState("AltGraph")) return;
+    if (e.repeat) return;
+    badgesShown = false;
+    if (e.ctrlKey || e.metaKey || e.getModifierState("AltGraph")) return;
     if (!sub("badges") || ziaOwnsAltDigits()) return;
     clearTimeout(badgeTimer);
-    badgeTimer = setTimeout(() => root.setAttribute("zc-alt-held", ""), 250);
+    badgeTimer = setTimeout(() => {
+      root.setAttribute("zc-alt-held", "");
+      badgesShown = true;
+    }, 250);
   }, true);
-  window.addEventListener("keyup", e => { if (e.key === "Alt" || !e.altKey) hideBadges(); }, true);
+  window.addEventListener("keyup", e => {
+    if (e.key === "Alt") {
+      // Holding Alt just to read the numbers shouldn't also open the menu bar
+      // when Alt is let go.
+      if (badgesShown) e.preventDefault();
+      badgesShown = false;
+      hideBadges();
+    } else if (!e.altKey) {
+      hideBadges();
+    }
+  }, true);
   window.addEventListener("blur", hideBadges);
   window.addEventListener("mousedown", hideBadges, true);
 })();

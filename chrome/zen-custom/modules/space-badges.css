@@ -21,7 +21,7 @@
      * squash the number into the dot. */
     content: counter(zc-space) !important;
     position: absolute !important;
-    top: -6px !important;
+    top: 1px !important; /* inside the button: the icon row clips anything above it */
     left: 50% !important;
     transform: translateX(-50%) !important;
     width: auto !important;
