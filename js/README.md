@@ -61,5 +61,9 @@ installer asks.
   avoiding Zen's full-list call, which would load DevTools. Add-ons' come
   from the add-ons you have on. Zia's and zen-custom's own come from short
   lists in the script, each shown only while its feature is on (keep them
-  in step when those shortcuts change). Built on open and removed on close. Toggle:
+  in step when those shortcuts change). An "Open" list at the top opens
+  Zen/Zia settings, Sine mods, Zen's Library on Downloads or History,
+  bookmarks, passwords, add-ons, clear data, about:keyboard, about:config,
+  the profile folder, and restarts Zen (Enter opens the highlighted one;
+  Zia settings go through Zia's own ⋯ menu item). Built on open and removed on close. Toggle:
   `zen-custom.shortcut-guide`.

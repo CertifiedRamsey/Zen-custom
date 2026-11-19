@@ -8,6 +8,10 @@
 // a panel opens in the middle of the window listing every shortcut, with a
 // search box. Esc, Ctrl+, again or a click outside closes it.
 //
+// At the top, "Open" lists places you go to often: Zen's and Zia's settings,
+// Sine mods, downloads, history, bookmarks, passwords, add-ons and more. Type
+// a few letters and press Enter, or click one.
+//
 // Zen's and Firefox's shortcuts (Zen's own plus everything in Firefox's
 // menus) are read live, so a shortcut you change in about:keyboard shows up
 // changed here. about:keyboard still has the complete list. Add-on shortcuts
@@ -273,6 +277,99 @@
     }
   }
 
+  // ---------- things the guide opens ----------
+
+  const openTab = url => switchToTabHavingURI(url, true, { ignoreFragment: "whenComparingAndReplace" });
+  // a command from Firefox's own menus; false if this Zen doesn't have it
+  const runCommand = id => {
+    const cmd = document.getElementById(id);
+    if (!cmd) return false;
+    cmd.doCommand();
+    return true;
+  };
+  // Zen's Library (the panel with History, Downloads, Spaces ...) on one section
+  const zenLibrary = section => {
+    const Library = customElements.get("zen-library");
+    if (typeof Library?.toggle !== "function" || !Services.prefs.getBoolPref("zen.library.enabled", false)) return false;
+    Library.toggle(section);
+    return true;
+  };
+
+  // Zia only opens its settings from its "Zia Settings" item in the ⋯ menu,
+  // which it adds the first time that menu opens.
+  async function openZiaSettings() {
+    let item = document.getElementById("zia-settings-menu-button");
+    if (!item) {
+      const popup = document.getElementById("appMenu-popup");
+      const shown = new Promise(done => {
+        popup?.addEventListener("popupshown", done, { once: true });
+        setTimeout(done, 1500);
+      });
+      PanelUI.show();
+      await shown;
+      item = document.getElementById("zia-settings-menu-button");
+    }
+    if (item) {
+      item.doCommand(); // closes the ⋯ menu too
+    } else {
+      PanelUI.hide();
+      openPreferences("paneSineMods"); // Zia's settings are also under Zia there
+    }
+  }
+
+  function restartZen() {
+    const cancel = Cc["@mozilla.org/supports-PRBool;1"].createInstance(Ci.nsISupportsPRBool);
+    Services.obs.notifyObservers(cancel, "quit-application-requested", "restart");
+    if (cancel.data) return; // something asked to stay open (e.g. a page with unsaved work)
+    Services.prefs.setBoolPref("browser.sessionstore.resume_session_once", true); // tabs come back
+    Services.startup.quit(Ci.nsIAppStartup.eAttemptQuit | Ci.nsIAppStartup.eRestart);
+  }
+
+  // [title, words people search with, what it does, key whose shortcut does the same]
+  function openItems() {
+    const items = [
+      ["Zen settings", "preferences options settings", () => openPreferences()],
+    ];
+    if (document.documentElement.hasAttribute("zia-js")) {
+      items.push(["Zia settings", "zia mod theme options preferences", openZiaSettings]);
+    }
+    items.push(
+      ["Sine mods (switch mods on or off)", "sine mods themes marketplace store zia", () => openPreferences("paneSineMods")],
+      ["Downloads", "downloads files saved", () => zenLibrary("downloads") || runCommand("Tools:Downloads") || openTab("about:downloads")],
+      ["History", "history visited past pages", () => zenLibrary("history") || runCommand("Browser:ShowAllHistory")],
+      ["Bookmarks", "bookmarks favourites favorites saved library", () => runCommand("Browser:ShowAllBookmarks"), "manBookmarkKb"],
+      ["Passwords", "passwords logins credentials", () => {
+        try {
+          const { LoginHelper } = ChromeUtils.importESModule("resource://gre/modules/LoginHelper.sys.mjs");
+          LoginHelper.openPasswordManager(window, { entryPoint: "mainmenu" });
+        } catch {
+          openTab("about:logins");
+        }
+      }],
+      ["Add-ons and extensions", "addons add-ons extensions plugins themes", () => runCommand("Tools:Addons") || openTab("about:addons"), "key_openAddons"],
+      ["Clear browsing data (cookies, cache, history)", "clear delete cookies cache history data wipe", () => runCommand("Tools:Sanitize"), "key_sanitize"],
+      ["Change keyboard shortcuts", "keyboard shortcuts keys change rebind about:keyboard", () => openTab("about:keyboard")],
+      ["Advanced settings (about:config)", "about:config advanced prefs config hidden settings zen-custom", () => openTab("about:config")],
+      ["Profile folder (where zen-custom is installed)", "profile folder chrome files explorer zen-custom", () => {
+        const dir = Services.dirsvc.get("ProfD", Ci.nsIFile);
+        try { dir.launch(); } catch { dir.reveal(); }
+      }],
+      ["Restart Zen (your tabs come back)", "restart relaunch reboot browser", restartZen],
+    );
+    return items;
+  }
+
+  // A key's current shortcut, from Zen (null if it has none).
+  function readKey(id) {
+    try {
+      if (!document.getElementById(id)) return null;
+      const { ZenKeyboardShortcuts } = ChromeUtils.importESModule("resource:///modules/zen/kbs/ZenKeyboardShortcuts.sys.mjs");
+      return ZenKeyboardShortcuts.getShortcut(window, id)?.shortcut || null;
+    } catch {
+      return null;
+    }
+  }
+
   // ---------- the panel ----------
 
   const css = `
@@ -294,10 +391,15 @@
     #zc-keys-guide h3 { margin: 12px 8px 4px; font-size: 11.5px; font-weight: 600; letter-spacing: .02em;
       text-transform: uppercase; color: light-dark(#8a8a90, #8c8c94); }
     #zc-keys-guide .row { display: flex; align-items: center; justify-content: space-between; gap: 16px;
-      padding: 6px 8px; border-radius: 7px; }
+      padding: 6px 8px; border-radius: 7px; box-sizing: border-box; min-height: 30px; }
     #zc-keys-guide .row:hover { background: light-dark(rgba(0,0,0,.04), rgba(255,255,255,.05)); }
     #zc-keys-guide .row .t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     #zc-keys-guide .row .mine { margin-left: 6px; font-size: 11px; color: var(--zen-primary-color, #5b6cff); }
+    #zc-keys-guide .act { cursor: pointer; }
+    #zc-keys-guide .act.sel { background: light-dark(rgba(0,0,0,.06), rgba(255,255,255,.08)); }
+    #zc-keys-guide .go { display: none; flex: none; font-size: 12px; color: light-dark(#8a8a90, #8c8c94); }
+    #zc-keys-guide .act.sel .go { display: inline; }
+    #zc-keys-guide .act.sel .keys { display: none; }
     #zc-keys-guide .keys { flex: none; display: flex; gap: 4px; }
     #zc-keys-guide kbd { font: 600 11.5px/1 system-ui, sans-serif; min-width: 20px; text-align: center;
       padding: 4px 6px; border-radius: 5px; color: inherit; background: light-dark(#fff, #2f2f35);
@@ -373,7 +475,11 @@
     returnFocus = document.commandDispatcher?.focusedElement ?? null;
     try {
       const browser = await browserShortcuts();
-      const sections = [{ label: "zen-custom", keys: ourShortcuts(), mine: true }];
+      const sections = [
+        { label: "Open", keys: openItems().map(([title, also, run, key]) =>
+          ({ title, also, run, shortcut: key ? readKey(key) : null })) },
+        { label: "zen-custom", keys: ourShortcuts(), mine: true },
+      ];
       const zia = ziaShortcuts();
       if (zia.length) sections.push({ label: "Zia", keys: zia });
       const addons = await addonShortcuts();
@@ -402,12 +508,26 @@
     top.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="7" cy="7" r="4.6"/><path d="m10.5 10.5 3.5 3.5"/></svg>';
     const input = el("input");
     input.type = "search";
-    input.placeholder = "Search shortcuts (try “space”, “tab” or “Ctrl+Shift”)";
+    input.placeholder = "Search, or open: settings, downloads, history …";
     const count = el("span", "count");
     top.append(input, count);
 
     const list = el("div", "list");
     const rows = [];
+    const acts = []; // the rows that open something
+    let sel = null;  // the one Enter opens
+    const select = (row, scroll = true) => {
+      sel?.classList.remove("sel");
+      sel = row;
+      if (!row) return;
+      row.classList.add("sel");
+      if (scroll) row.scrollIntoView({ block: "nearest" });
+    };
+    const shownActs = () => acts.filter(r => !r.hidden);
+    const run = row => {
+      close();
+      Promise.resolve().then(row._zcRun).catch(e => console.error("[zen-custom shortcut guide] Couldn't open that:", e));
+    };
     for (const s of sections) {
       if (!s.keys.length) continue;
       const sec = el("section");
@@ -416,11 +536,20 @@
         const row = el("div", "row");
         const t = el("span", "t", k.title);
         if (k.isCustomized) t.append(el("span", "mine", "changed"));
-        row.append(t, keycaps(k.shortcut));
-        const hay = `${k.title} ${k.shortcut} ${s.label}`.toLowerCase();
+        row.append(t);
+        if (k.shortcut) row.append(keycaps(k.shortcut));
+        const hay = `${k.title} ${k.shortcut ?? ""} ${s.label} ${k.also ?? ""}`.toLowerCase();
         row._zcFind = hay + ALSO.filter(([re]) => re.test(hay)).map(([, w]) => " " + w).join("");
-        row._zcCaps = k.shortcut.toLowerCase().replace(/^hold /, "").split(/\+(?!$)/);
+        row._zcCaps = k.shortcut ? k.shortcut.toLowerCase().replace(/^hold /, "").split(/\+(?!$)/) : [];
         row.title = k.title;
+        if (k.run) {
+          row.classList.add("act");
+          row.append(el("span", "go", "Open ↵"));
+          row._zcRun = k.run;
+          row.addEventListener("click", () => run(row));
+          row.addEventListener("mousemove", () => { if (sel !== row) select(row, false); });
+          acts.push(row);
+        }
         if (k.copy) {
           row.style.cursor = "pointer";
           row.addEventListener("click", () => {
@@ -443,7 +572,7 @@
 
     const foot = el("div", "foot", browserFailed
       ? "Couldn't read Zen's own shortcuts this time; about:keyboard has the full list."
-      : "Full list and changes: about:keyboard. Esc closes.");
+      : "↑ ↓ choose, Enter opens, Esc closes. Full shortcut list: about:keyboard.");
 
     box.append(top, list, foot);
     overlay.append(box);
@@ -463,10 +592,27 @@
         sec.hidden = !sec.querySelector(".row:not([hidden])");
       }
       empty.hidden = shown > 0;
-      count.textContent = words.length ? `${shown} found` : `${rows.length} shortcuts`;
+      count.textContent = words.length ? `${shown} found` : `${rows.length - acts.length} shortcuts`;
+      // Enter opens the first match, or the top item before anything is typed
+      select(keyQuery ? null : shownActs()[0] ?? null, false);
     };
     input.addEventListener("input", filter);
     input.addEventListener("keydown", e => {
+      if (e.key === "Enter" && sel) {
+        e.preventDefault();
+        run(sel);
+        return;
+      }
+      // ↑ and ↓ move between the things to open while any are showing
+      const showing = shownActs();
+      if ((e.key === "ArrowDown" || e.key === "ArrowUp") && showing.length) {
+        e.preventDefault();
+        const i = showing.indexOf(sel);
+        const next = e.key === "ArrowDown" ? showing[i + 1] : showing[i - 1];
+        if (next) select(next);
+        else list.scrollBy(0, e.key === "ArrowDown" ? 40 : -40);
+        return;
+      }
       const step = { ArrowDown: 40, ArrowUp: -40, PageDown: list.clientHeight - 40, PageUp: 40 - list.clientHeight }[e.key];
       if (step) { e.preventDefault(); list.scrollBy(0, step); }
     });
