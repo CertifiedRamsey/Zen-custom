@@ -8,10 +8,11 @@
 // a panel opens in the middle of the window listing every shortcut, with a
 // search box. Esc, Ctrl+, again or a click outside closes it.
 //
-// Zen's and Firefox's shortcuts are read live from the same list as
-// about:keyboard, so a shortcut you change there shows up changed here, and
-// a new Zen version's new shortcuts show up by themselves. Add-on shortcuts
-// come from the add-ons themselves. zen-custom's own are listed below.
+// Zen's and Firefox's shortcuts (Zen's own plus everything in Firefox's
+// menus) are read live, so a shortcut you change in about:keyboard shows up
+// changed here. about:keyboard still has the complete list. Add-on shortcuts
+// come from the add-ons you have on; Zia's and zen-custom's own are listed
+// below, each only while its feature is switched on.
 //
 // Light on memory and CPU: until you press Ctrl+, this is one key listener.
 // The panel is built when it opens and thrown away when it closes.
@@ -66,11 +67,36 @@
     return list.map(([title, shortcut]) => ({ title, shortcut }));
   }
 
+  // Zia's shortcuts, only those switched on in Zia's settings. Zia reads
+  // its feature switches when Zen starts; "zia-js" on the window means Zia
+  // is running here.
+  function ziaShortcuts() {
+    if (!document.documentElement.hasAttribute("zia-js")) return [];
+    const on = name => pref(`zia.features.${name}`);
+    const list = [];
+    if (on("tab-numbers")) {
+      const key = Services.prefs.getStringPref("zia.tab-numbers.key", "cmd") === "alt" ? "Alt" : "Ctrl";
+      list.push({ title: "Show tab numbers", shortcut: `Hold ${key}` },
+        { title: "Go to a tab by its number (chosen when you let go)", shortcut: `${key}+1 … 9` });
+    }
+    if (on("undo-close")) {
+      list.push({ title: "Reopen the tab you just closed (within 10 seconds)", shortcut: "Ctrl+Z" });
+    }
+    return list;
+  }
+
+  // Add-on key names (manifest style) as they're printed on the keyboard.
+  const KEY_NAMES = { Comma: ",", Period: ".", Space: "Space", Up: "↑", Down: "↓", Left: "←", Right: "→",
+    MacCtrl: "Ctrl", Command: "Ctrl", PageUp: "Page Up", PageDown: "Page Down" };
+  const prettyKeys = shortcut => shortcut.split("+").map(k => KEY_NAMES[k] ?? k).join("+");
+
   // Shortcuts that add-ons set up (about:addons > Manage Extension Shortcuts).
   async function addonShortcuts() {
     const out = [];
+    const isPrivate = window.PrivateBrowsingUtils?.isWindowPrivate(window) ?? false;
     for (const policy of WebExtensionPolicy.getActiveExtensions()) {
       try {
+        if (isPrivate && !policy.privateBrowsingAllowed) continue;
         const shortcuts = policy.extension?.shortcuts;
         if (!shortcuts) continue;
         for (const cmd of await shortcuts.allCommands()) {
@@ -79,7 +105,7 @@
             ({ _execute_browser_action: "Open", _execute_action: "Open",
               _execute_sidebar_action: "Open sidebar", _execute_page_action: "Open (address bar)" })[cmd.name] ||
             cmd.name;
-          out.push({ title: `${policy.name}: ${what}`, shortcut: cmd.shortcut });
+          out.push({ title: `${policy.name}: ${what}`, shortcut: prettyKeys(cmd.shortcut) });
         }
       } catch (e) {
         console.error("[zen-custom shortcut guide] Couldn't read an add-on's shortcuts:", e);
@@ -88,14 +114,96 @@
     return out;
   }
 
-  // Zen's and Firefox's, the same list about:keyboard shows.
+  // Zen's own shortcuts, grouped as about:keyboard groups them (copied from
+  // Zen's ZenKeyboardShortcuts.sys.mjs; a key Zen drops is skipped, and the
+  // titles come from Zen's own translations).
+  const ZEN_GROUPS = [
+    ["zenCKSOption-group-zen-workspace", "zen-spaces-menubar", [
+      ...Array.from({ length: 10 }, (_, i) => [`zen-workspace-switch-${i + 1}`, `zen-workspace-shortcut-switch-${i + 1}`]),
+      ["zen-workspace-forward", null, "Next space"],
+      ["zen-workspace-backward", null, "Previous space"],
+      ["zen-workspace-create", "zen-workspace-shortcut-create"],
+    ]],
+    ["zenCKSOption-group-zen-tabs", null, [
+      ["zen-toggle-pin-tab", "zen-toggle-pin-tab-shortcut"],
+      ["zen-pinned-tab-reset-shortcut", "zen-pinned-tab-shortcut-reset"],
+      ["zen-duplicate-tab", "zen-duplicate-tab-shortcut"],
+      ["zen-close-all-unpinned-tabs", "zen-close-all-unpinned-tabs-shortcut"],
+      ["zen-glance-expand", "zen-glance-expand"],
+      ["zen-copy-url", "zen-text-action-copy-url-shortcut"],
+      ["zen-copy-url-markdown", "zen-text-action-copy-url-markdown-shortcut"],
+    ]],
+    ["zenCKSOption-group-zen-split-view", null, [
+      ["zen-split-view-grid", "zen-split-view-shortcut-grid"],
+      ["zen-split-view-vertical", "zen-split-view-shortcut-vertical"],
+      ["zen-split-view-horizontal", "zen-split-view-shortcut-horizontal"],
+      ["zen-split-view-unsplit", "zen-split-view-shortcut-unsplit"],
+      ["zen-new-empty-split-view", "zen-new-empty-split-view-shortcut"],
+    ]],
+    ["zenCKSOption-group-zen-layout", null, [
+      ["zen-compact-mode-toggle", "zen-compact-mode-shortcut-toggle"],
+      ["zen-compact-mode-show-sidebar", "zen-compact-mode-shortcut-show-sidebar"],
+      ["zen-toggle-sidebar", "zen-sidebar-shortcut-toggle"],
+      ["zen-library-toggle", "zen-library-shortcut-toggle"],
+    ]],
+  ];
+
+  // Zen's and Firefox's shortcuts. Zen's ready-made full list
+  // (ZenKeyboardShortcuts.getShortcuts) would start all of DevTools and keep
+  // it in memory until restart, so this reads the keys one by one instead:
+  // Zen's from the table above, Firefox's from its menu bar (File, Edit,
+  // View ...). Each key's current binding, including changes made in
+  // about:keyboard, comes from Zen.
   async function browserShortcuts() {
     try {
-      const { ZenKeyboardShortcuts } = ChromeUtils.importESModule("resource:///modules/zen/kbs/ZenKeyboardShortcuts.sys.mjs");
-      const categories = await ZenKeyboardShortcuts.getShortcuts(window);
-      return categories
-        .map(c => ({ label: c.label, keys: c.keys.filter(k => k.shortcut) }))
-        .filter(c => c.keys.length);
+      const { ZenKeyboardShortcuts: kbs } = ChromeUtils.importESModule("resource:///modules/zen/kbs/ZenKeyboardShortcuts.sys.mjs");
+      const read = id => {
+        try { return document.getElementById(id) ? kbs.getShortcut(window, id) : null; } catch { return null; }
+      };
+      const out = [];
+      const seen = new Set();
+
+      const zenL10n = new Localization(["browser/preferences/zen-preferences.ftl"]);
+      const ids = ZEN_GROUPS.flatMap(([g, , keys]) => [g, ...keys.map(k => k[1]).filter(Boolean)]);
+      const values = await zenL10n.formatValues(ids.map(id => ({ id })));
+      const text = Object.fromEntries(ids.map((id, i) => [id, values[i]]));
+      for (const [groupId, menuId, keys] of ZEN_GROUPS) {
+        const list = [];
+        for (const [id, l10nId, fallback] of keys) {
+          const data = read(id);
+          seen.add(id);
+          if (!data?.shortcut) continue;
+          list.push({ ...data, title: (l10nId && text[l10nId]) || fallback || id });
+        }
+        const label = (menuId && document.getElementById(menuId)?.label) || text[groupId] || "Zen";
+        if (list.length) out.push({ label, keys: list });
+      }
+
+      for (const menu of document.querySelectorAll("#main-menubar > menu")) {
+        const items = [...menu.querySelectorAll("menuitem[key]")];
+        // menus that were never opened may not have their labels yet
+        const missing = items.filter(m => !m.label && m.getAttribute("data-l10n-id"));
+        if (missing.length) {
+          try {
+            const msgs = await document.l10n.formatMessages(missing.map(m => ({ id: m.getAttribute("data-l10n-id") })));
+            missing.forEach((m, i) => {
+              m._zcLabel = msgs[i]?.attributes?.find(a => a.name === "label")?.value;
+            });
+          } catch {}
+        }
+        const list = [];
+        for (const m of items) {
+          const id = m.getAttribute("key");
+          if (seen.has(id)) continue;
+          seen.add(id);
+          const data = read(id);
+          const title = m.label || m._zcLabel;
+          delete m._zcLabel;
+          if (data?.shortcut && title) list.push({ ...data, title });
+        }
+        if (list.length) out.push({ label: menu.label || menu.id, keys: list });
+      }
+      return out;
     } catch (e) {
       console.error("[zen-custom shortcut guide] Couldn't read Zen's shortcuts:", e);
       return null;
@@ -131,6 +239,7 @@
     #zc-keys-guide kbd { font: 600 11.5px/1 system-ui, sans-serif; min-width: 20px; text-align: center;
       padding: 4px 6px; border-radius: 5px; color: inherit; background: light-dark(#f3f3f5, #2f2f35);
       border: 1px solid light-dark(rgba(0,0,0,.1), rgba(255,255,255,.1)); border-bottom-width: 2px; }
+    #zc-keys-guide [hidden] { display: none !important; }
     #zc-keys-guide .empty { padding: 28px 8px; text-align: center; color: light-dark(#8a8a90, #8c8c94); }
     #zc-keys-guide .foot { padding: 8px 16px; font-size: 12px; color: light-dark(#8a8a90, #8c8c94);
       border-top: 1px solid light-dark(rgba(0,0,0,.07), rgba(255,255,255,.07)); }
@@ -157,17 +266,22 @@
   let opening = false;
   let returnFocus = null;
 
+  let cancelled = false;
+
   async function open() {
     if (overlay || opening) return;
     opening = true;
+    cancelled = false;
     returnFocus = document.commandDispatcher?.focusedElement ?? null;
     try {
       const browser = await browserShortcuts();
       const sections = [{ label: "zen-custom", keys: ourShortcuts(), mine: true }];
+      const zia = ziaShortcuts();
+      if (zia.length) sections.push({ label: "Zia", keys: zia });
       const addons = await addonShortcuts();
       if (addons.length) sections.push({ label: "Add-ons", keys: addons });
       if (browser) sections.push(...browser);
-      build(sections, !browser);
+      if (!cancelled) build(sections, !browser);
     } finally {
       opening = false;
     }
@@ -217,7 +331,7 @@
 
     const foot = el("div", "foot", browserFailed
       ? "Couldn't read Zen's own shortcuts this time; about:keyboard has the full list."
-      : "Change Zen's and Firefox's shortcuts in about:keyboard. Esc closes.");
+      : "Full list and changes: about:keyboard. Esc closes.");
 
     box.append(top, list, foot);
     overlay.append(box);
@@ -244,6 +358,7 @@
   }
 
   function close() {
+    if (opening) cancelled = true;
     if (!overlay) return;
     overlay.remove();
     overlay = null;
@@ -254,20 +369,23 @@
   }
 
   // Capture phase on the window, so a page can't take Ctrl+, first.
+  // The same key press can come back from the page; it's ignored then.
+  let lastStamp = 0;
   window.addEventListener("keydown", e => {
-    if (overlay && e.key === "Escape") {
+    const plainEsc = e.key === "Escape" && !e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey;
+    if ((overlay || opening) && plainEsc) {
       e.preventDefault();
       e.stopImmediatePropagation();
       close();
       return;
     }
-    if (e.code !== "Comma" || e.altKey || e.shiftKey || e.getModifierState("AltGraph")) return;
-    if (!e.ctrlKey || e.metaKey) return;
+    if (e.code !== "Comma" || !e.ctrlKey || e.metaKey || e.altKey || e.shiftKey || e.getModifierState("AltGraph")) return;
     if (!Services.prefs.getBoolPref(PREF, true)) return;
     e.preventDefault();
     e.stopImmediatePropagation();
-    if (e.repeat) return;
-    if (overlay) close();
+    if (e.repeat || e.timeStamp === lastStamp) return;
+    lastStamp = e.timeStamp;
+    if (overlay || opening) close();
     else open();
   }, true);
 
