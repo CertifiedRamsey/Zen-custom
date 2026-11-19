@@ -55,6 +55,12 @@ installer asks.
   `tools/screensaver.ps1`, run as `zen ss` (install.ps1 puts a `zen.cmd`
   in %LOCALAPPDATA%\zen-custom-cmd and adds that folder to your user PATH).
   Toggle: `zen-custom.fake-terminal`.
+- `container-emoji.uc.js`: an emoji per container, picked with Zen's own
+  emoji picker (gZenEmojiPicker, the one spaces and folders use) from the
+  Ctrl+, guide. Stored in `zen-custom.container-emoji.icons` by container id
+  and drawn by overriding `--identity-icon`/`--panel-item-icon` on
+  `[data-usercontextid]` menu items (Firefox's createUserContextMenu).
+  Tabs are left alone. Toggle: `zen-custom.container-emoji`.
 - `shortcut-guide.uc.js`: Ctrl+, opens a searchable panel of every
   shortcut. Zen's own (from a copy of Zen's about:keyboard groups) and
   Firefox's menu shortcuts are read key by key with their current binding,
