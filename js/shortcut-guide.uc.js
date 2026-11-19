@@ -30,12 +30,35 @@
   const HTML = "http://www.w3.org/1999/xhtml";
   const pref = (name, fallback = true) => Services.prefs.getBoolPref(name, fallback);
 
+  // Zia's tab numbers, if Zia runs here with them on: "ctrl", "alt" or null.
+  const ziaNumbersKey = () =>
+    document.documentElement.hasAttribute("zia-js") && pref("zia.features.tab-numbers")
+      ? (Services.prefs.getStringPref("zia.tab-numbers.key", "cmd") === "alt" ? "alt" : "ctrl")
+      : null;
+
+  // Keys another script takes over, so the original owner's row would be wrong
+  // or a duplicate.
+  function takenOver() {
+    const skip = new Set();
+    const zia = ziaNumbersKey();
+    if (pref("zen-custom.space-keys")) {
+      // listed in the zen-custom section instead
+      skip.add("zen-workspace-forward").add("zen-workspace-backward");
+      for (let i = 1; i <= 10; i++) skip.add(`zen-workspace-switch-${i}`);
+    }
+    if (zia === "alt") for (let i = 1; i <= 10; i++) skip.add(`zen-workspace-switch-${i}`);
+    if (zia === "ctrl") {
+      for (let i = 1; i <= 8; i++) skip.add(`key_selectTab${i}`);
+      skip.add("key_selectLastTab");
+    }
+    if (pref("zen-custom.tab-monitor")) skip.add("key_aboutProcesses"); // Shift+Esc
+    return skip;
+  }
+
   // zen-custom's own shortcuts, each shown only while its feature is on.
   function ourShortcuts() {
     const spaceKeys = pref("zen-custom.space-keys");
-    const ziaAlt =
-      pref("zia.features.tab-numbers") &&
-      Services.prefs.getStringPref("zia.tab-numbers.key", "cmd") === "alt";
+    const ziaAlt = ziaNumbersKey() === "alt";
     const list = [
       ["Open this shortcut guide", "Ctrl+,"],
     ];
@@ -67,19 +90,19 @@
     return list.map(([title, shortcut]) => ({ title, shortcut }));
   }
 
-  // Zia's shortcuts, only those switched on in Zia's settings. Zia reads
-  // its feature switches when Zen starts; "zia-js" on the window means Zia
-  // is running here.
+  // Zia's shortcuts, only those switched on in Zia's settings ("zia-js" on
+  // the window means Zia is running here). Zia applies a switch after a
+  // restart, so right after flipping one this can be a step ahead.
   function ziaShortcuts() {
     if (!document.documentElement.hasAttribute("zia-js")) return [];
-    const on = name => pref(`zia.features.${name}`);
     const list = [];
-    if (on("tab-numbers")) {
-      const key = Services.prefs.getStringPref("zia.tab-numbers.key", "cmd") === "alt" ? "Alt" : "Ctrl";
+    const numbers = ziaNumbersKey();
+    if (numbers) {
+      const key = numbers === "alt" ? "Alt" : "Ctrl";
       list.push({ title: "Show tab numbers", shortcut: `Hold ${key}` },
-        { title: "Go to a tab by its number (chosen when you let go)", shortcut: `${key}+1 … 9` });
+        { title: "Go to a tab by its number (for tab 12 type 1 then 2; it opens when you let go)", shortcut: `${key}+1 … 9` });
     }
-    if (on("undo-close")) {
+    if (pref("zia.features.undo-close")) {
       list.push({ title: "Reopen the tab you just closed (within 10 seconds)", shortcut: "Ctrl+Z" });
     }
     return list;
@@ -148,6 +171,23 @@
     ]],
   ];
 
+  const FIREFOX_EXTRA = [
+    ["key_restoreLastClosedTabOrWindowOrSession", "customkeys-history-reopen-tab"],
+    ["key_undoCloseTab", "customkeys-history-reopen-tab-current-window"],
+    ["key_undoCloseWindow", "customkeys-history-reopen-window"],
+    ["goBackKb", "customkeys-nav-back"], ["goForwardKb", "customkeys-nav-forward"], ["goHome", "customkeys-nav-home"],
+    ["key_reload", "customkeys-nav-reload"], ["key_reload2", "customkeys-nav-reload"],
+    ["key_reload_skip_cache", "customkeys-nav-reload-skip-cache"], ["key_stop", "customkeys-nav-stop"],
+    ...Array.from({ length: 8 }, (_, i) => [`key_selectTab${i + 1}`, `customkeys-nav-select-tab-${i + 1}`]),
+    ["key_selectLastTab", "customkeys-nav-select-last-tab"], ["key_toggleMute", "customkeys-nav-toggle-mute"],
+    ["key_duplicateTab", "customkeys-file-duplicate-tab"], ["key_copyTabURL", "customkeys-file-copy-tab-url"],
+    ["key_search", "customkeys-file-focus-search"], ["key_findPrevious", "customkeys-edit-find-previous"],
+    ["toggleSidebarKb", "customkeys-sidebar-toggle"], ["viewBookmarksToolbarKb", "customkeys-view-bookmarks-toolbar"],
+    ["key_togglePictureInPicture", "customkeys-view-picture-in-picture"], ["key_screenshot", "customkeys-tools-screenshot"],
+    ["key_toggleToolboxF12", "customkeys-dev-tools"], ["key_inspector", "customkeys-dev-inspector"],
+    ["key_webconsole", "customkeys-dev-webconsole"],
+  ];
+
   // Zen's and Firefox's shortcuts. Zen's ready-made full list
   // (ZenKeyboardShortcuts.getShortcuts) would start all of DevTools and keep
   // it in memory until restart, so this reads the keys one by one instead:
@@ -161,7 +201,7 @@
         try { return document.getElementById(id) ? kbs.getShortcut(window, id) : null; } catch { return null; }
       };
       const out = [];
-      const seen = new Set();
+      const seen = takenOver();
 
       const zenL10n = new Localization(["browser/preferences/zen-preferences.ftl"]);
       const ids = ZEN_GROUPS.flatMap(([g, , keys]) => [g, ...keys.map(k => k[1]).filter(Boolean)]);
@@ -170,17 +210,20 @@
       for (const [groupId, menuId, keys] of ZEN_GROUPS) {
         const list = [];
         for (const [id, l10nId, fallback] of keys) {
+          if (seen.has(id)) continue;
           const data = read(id);
           seen.add(id);
           if (!data?.shortcut) continue;
           list.push({ ...data, title: (l10nId && text[l10nId]) || fallback || id });
         }
-        const label = (menuId && document.getElementById(menuId)?.label) || text[groupId] || "Zen";
-        if (list.length) out.push({ label, keys: list });
+        const label = (menuId && document.getElementById(menuId)?.label) || text[groupId] || "";
+        if (list.length) out.push({ label: label ? `Zen: ${label}` : "Zen", keys: list });
       }
 
       for (const menu of document.querySelectorAll("#main-menubar > menu")) {
-        const items = [...menu.querySelectorAll("menuitem[key]")];
+        // the Recently Closed lists label their first item with a page title
+        const items = [...menu.querySelectorAll("menuitem[key]")]
+          .filter(m => !m.closest("#historyUndoMenu, #historyUndoWindowMenu"));
         // menus that were never opened may not have their labels yet
         const missing = items.filter(m => !m.label && m.getAttribute("data-l10n-id"));
         if (missing.length) {
@@ -203,6 +246,19 @@
         }
         if (list.length) out.push({ label: menu.label || menu.id, keys: list });
       }
+
+      // Keys about:keyboard lists that aren't in any menu (reopen tab, back, reload ...).
+      const fxText = await new Localization(["browser/customkeys.ftl"]).formatValues(FIREFOX_EXTRA.map(([, id]) => ({ id })));
+      const extra = [];
+      FIREFOX_EXTRA.forEach(([id], i) => {
+        if (seen.has(id)) return;
+        seen.add(id);
+        const data = read(id);
+        if (data?.shortcut && fxText[i] && !extra.some(e => e.shortcut === data.shortcut && e.title === fxText[i])) {
+          extra.push({ ...data, title: fxText[i] });
+        }
+      });
+      if (extra.length) out.push({ label: "Navigation and more", keys: extra });
       return out;
     } catch (e) {
       console.error("[zen-custom shortcut guide] Couldn't read Zen's shortcuts:", e);
@@ -262,6 +318,33 @@
     return box;
   }
 
+  // Words people search with that the titles don't use.
+  const ALSO = [
+    [/location/, "address bar url"], [/reload/, "refresh"], [/reopen/, "restore undo close"],
+    [/split view/, "split screen"], [/private/, "incognito"], [/full screen/, "fullscreen"],
+    [/developer|inspector|console/, "devtools dev tools inspect"], [/mute/, "sound audio"],
+    [/glance/, "preview peek"], [/\besc\b/, "escape"], [/[←→↑↓]/, "arrow"],
+  ];
+  const MODS = new Set(["ctrl", "alt", "shift"]);
+  const KEY_ALIAS = { escape: "esc", comma: ",", period: ".", plus: "+", minus: "-", left: "←", right: "→",
+    up: "↑", down: "↓", delete: "del" };
+  // "ctrl shift", "Ctrl+S", "alt 3": match the keys themselves, exactly when a key is given.
+  function shortcutQuery(q) {
+    const parts = q.replace(/\+$/, " plus").split(/\s*\+\s*|\s+/).filter(Boolean);
+    if (!parts.length || !MODS.has(parts[0]) || parts.slice(0, -1).some(p => !MODS.has(p))) return null;
+    const want = parts.filter(p => MODS.has(p));
+    const last = parts.at(-1);
+    const key = MODS.has(last) ? null : (KEY_ALIAS[last] ?? last);
+    return caps => {
+      const mods = caps.filter(c => MODS.has(c));
+      if (!want.every(m => mods.includes(m))) return false;
+      if (!key) return true;
+      const k = caps.at(-1);
+      return mods.length === want.length && (k === key || k.split(" … ").includes(key) ||
+        (/^\d$/.test(key) && /^1 … 9$/.test(k) && key !== "0"));
+    };
+  }
+
   let overlay = null;
   let opening = false;
   let returnFocus = null;
@@ -319,7 +402,10 @@
         const t = el("span", "t", k.title);
         if (k.isCustomized) t.append(el("span", "mine", "changed"));
         row.append(t, keycaps(k.shortcut));
-        row.dataset.find = `${k.title} ${k.shortcut} ${s.label}`.toLowerCase();
+        const hay = `${k.title} ${k.shortcut} ${s.label}`.toLowerCase();
+        row._zcFind = hay + ALSO.filter(([re]) => re.test(hay)).map(([, w]) => " " + w).join("");
+        row._zcCaps = k.shortcut.toLowerCase().replace(/^hold /, "").split(/\+(?!$)/);
+        row.title = k.title;
         sec.append(row);
         rows.push(row);
       }
@@ -338,10 +424,12 @@
     (document.body || document.documentElement).append(overlay);
 
     const filter = () => {
-      const words = input.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+      const q = input.value.trim().toLowerCase();
+      const words = q.split(/\s+/).filter(Boolean);
+      const keyQuery = shortcutQuery(q);
       let shown = 0;
       for (const row of rows) {
-        const hit = words.every(w => row.dataset.find.includes(w));
+        const hit = keyQuery ? keyQuery(row._zcCaps) : words.every(w => row._zcFind.includes(w));
         row.hidden = !hit;
         if (hit) shown++;
       }
@@ -352,6 +440,11 @@
       count.textContent = words.length ? `${shown} found` : `${rows.length} shortcuts`;
     };
     input.addEventListener("input", filter);
+    input.addEventListener("keydown", e => {
+      const step = { ArrowDown: 40, ArrowUp: -40, PageDown: list.clientHeight - 40, PageUp: 40 - list.clientHeight }[e.key];
+      if (step) { e.preventDefault(); list.scrollBy(0, step); }
+    });
+    box.addEventListener("mousedown", e => { if (e.target !== input) e.preventDefault(); });
     overlay.addEventListener("mousedown", e => { if (e.target === overlay) close(); });
     filter();
     input.focus();
@@ -379,13 +472,14 @@
       close();
       return;
     }
-    if (e.code !== "Comma" || !e.ctrlKey || e.metaKey || e.altKey || e.shiftKey || e.getModifierState("AltGraph")) return;
+    if ((e.code !== "Comma" && e.key !== ",") || !e.ctrlKey || e.metaKey || e.altKey || e.shiftKey || e.getModifierState("AltGraph")) return;
     if (!Services.prefs.getBoolPref(PREF, true)) return;
     e.preventDefault();
     e.stopImmediatePropagation();
     if (e.repeat || e.timeStamp === lastStamp) return;
     lastStamp = e.timeStamp;
-    if (overlay || opening) close();
+    if (overlay) close();
+    else if (opening) cancelled = !cancelled;
     else open();
   }, true);
 
