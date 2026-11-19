@@ -1,0 +1,47 @@
+/* Space badges: while Alt is held, each space icon at the bottom of the
+ * sidebar shows its number, so Alt+number (go there) and Alt+Shift+number
+ * (send the tab there) are easy to aim. space-keys.uc.js sets zc-alt-held on
+ * the window while Alt is down; only the first ten get a number, as Alt+0 is
+ * the last space a key reaches.
+ *
+ * Pref: zen-custom.space-keys.badges (and zen-custom.space-keys). */
+@media -moz-pref("zen-custom.space-keys") and -moz-pref("zen-custom.space-keys.badges") {
+  #zen-workspaces-button {
+    counter-reset: zc-space;
+  }
+
+  #zen-workspaces-button > toolbarbutton[zen-workspace-id] {
+    counter-increment: zc-space;
+    position: relative;
+  }
+
+  :root[zc-alt-held] #zen-workspaces-button > toolbarbutton[zen-workspace-id]:nth-of-type(-n+10)::after {
+    /* !important throughout: when the space icons don't fit, Zen draws each
+     * one as a small dot using this same ::after, and its rules must not
+     * squash the number into the dot. */
+    content: counter(zc-space) !important;
+    position: absolute !important;
+    top: 1px !important; /* inside the button: the icon row clips anything above it */
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: auto !important;
+    height: auto !important;
+    min-width: 13px !important;
+    padding: 0 3px !important;
+    border-radius: 4px !important;
+    font: 700 10px/14px system-ui, sans-serif !important;
+    text-align: center !important;
+    color: light-dark(#fff, #111) !important;
+    background: light-dark(rgba(20, 20, 24, .88), rgba(245, 245, 247, .92)) !important;
+    filter: none !important;
+    opacity: 1 !important;
+    transition: none !important;
+    pointer-events: none !important;
+    z-index: 3 !important;
+  }
+
+  /* Alt+0 goes to space 10 */
+  :root[zc-alt-held] #zen-workspaces-button > toolbarbutton[zen-workspace-id]:nth-of-type(10)::after {
+    content: "0" !important;
+  }
+}

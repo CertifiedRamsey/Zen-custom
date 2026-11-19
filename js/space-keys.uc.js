@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name           zen-custom: Space Keys
-// @description    Keeps the switch-space shortcuts working on every page, whatever the settings say.
+// @description    Space shortcuts that always work, plus a name flash, number badges and send-tab-to-space.
 // @include        main
 // ==/UserScript==
 //
@@ -14,6 +14,15 @@
 // Switch off with zen-custom.space-keys = false (Zen's own shortcuts then
 // behave as before). If Zia's tab numbers are set to Alt, Alt+digits are left
 // to Zia.
+//
+// Also, each with its own switch:
+// - zen-custom.space-keys.flash: after a keyboard switch, the space's name
+//   shows for a moment at the top of the window.
+// - zen-custom.space-keys.badges: hold Alt and each space icon at the bottom
+//   of the sidebar gets its number (drawn by modules/space-badges.css).
+// - zen-custom.space-keys.send: Alt+Shift+1 ... 9 (0 = space 10) moves the
+//   tab you're on (or the selected tabs) to that space and goes with it, the
+//   same as right-click > Move to space.
 
 (() => {
   "use strict";
@@ -26,9 +35,11 @@
   document.documentElement.setAttribute(loadedMark, "");
 
   const PREF = "zen-custom.space-keys";
+  const HTML = "http://www.w3.org/1999/xhtml";
 
-  // read on each use, so switching the pref off works without a restart
+  // read on each use, so switching the prefs off works without a restart
   const enabled = () => Services.prefs.getBoolPref(PREF, true);
+  const sub = name => enabled() && Services.prefs.getBoolPref(`${PREF}.${name}`, true);
 
   // Zen's own commands, so a switch behaves exactly like Zen's shortcut
   // (private windows, the space-switch animation and so on).
@@ -45,12 +56,21 @@
     Services.prefs.getBoolPref("zia.features.tab-numbers", true) &&
     Services.prefs.getStringPref("zia.tab-numbers.key", "cmd") === "alt";
 
-  // What a key press means: a space number (0-based), a step, or nothing.
+  const digitIndex = e => {
+    const m = /^Digit([0-9])$/.exec(e.code);
+    return m ? (m[1] === "0" ? 9 : Number(m[1]) - 1) : -1;
+  };
+
+  // What a key press means: a space number (0-based), a step, a space to
+  // send the tab to, or nothing.
   function action(e) {
-    if (e.metaKey || e.shiftKey || e.getModifierState("AltGraph")) return null;
-    if (e.altKey && !e.ctrlKey && !ziaOwnsAltDigits()) {
-      const m = /^Digit([0-9])$/.exec(e.code);
-      if (m) return { index: m[1] === "0" ? 9 : Number(m[1]) - 1 };
+    if (e.metaKey || e.getModifierState("AltGraph")) return null;
+    if (e.shiftKey) {
+      if (e.altKey && !e.ctrlKey && sub("send") && digitIndex(e) !== -1) return { send: digitIndex(e) };
+      return null;
+    }
+    if (e.altKey && !e.ctrlKey && !ziaOwnsAltDigits() && digitIndex(e) !== -1) {
+      return { index: digitIndex(e) };
     }
     if (e.altKey && e.ctrlKey) {
       if (e.code === "ArrowRight") return { step: 1 };
@@ -71,16 +91,154 @@
     // it's open, and Ctrl+Alt is still held after Ctrl+Alt+Space opened it.
     // Script load order isn't guaranteed, so don't rely on it eating them first.
     if ("step" in a && document.getElementById("zcts")?.hidden === false) return;
+    // Alt+Shift+digit for a space that doesn't exist is left alone.
+    if ("send" in a && !canSendTo(a.send)) return;
     e.preventDefault();
     e.stopImmediatePropagation();
     if (e.repeat || e.timeStamp === lastStamp) return;
     lastStamp = e.timeStamp;
+    hideBadges();
     const ws = window.gZenWorkspaces;
+    if ("send" in a) {
+      sendTabs(a.send);
+      return;
+    }
+    const before = ws?.activeWorkspace;
     if ("index" in a) {
       run(`cmd_zenWorkspaceSwitch${a.index + 1}`, () => ws?.shortcutSwitchTo(a.index));
     } else {
       run(a.step > 0 ? "cmd_zenWorkspaceForward" : "cmd_zenWorkspaceBackward",
         () => ws?.changeWorkspaceShortcut(a.step));
     }
+    flashWhenSwitched(before);
   }, true);
+
+  // ---------- send the tab to a space ----------
+
+  function canSendTo(index) {
+    const ws = window.gZenWorkspaces;
+    return !!ws && !ws.privateWindowOrDisabled && !!ws.getWorkspaces()?.[index];
+  }
+
+  async function sendTabs(index) {
+    const ws = window.gZenWorkspaces;
+    const target = ws?.getWorkspaces()?.[index];
+    if (!target || ws.privateWindowOrDisabled) return;
+    if (target.uuid === ws.activeWorkspace) {
+      flash(target, "Already here");
+      return;
+    }
+    // While a Glance is open the selected tab is the Glance itself; move the
+    // tab it belongs to, as Zen's menu does. Essentials belong to every space
+    // and Zen's placeholder tab in an empty space belongs to none, so skip both.
+    const glance = window.gZenGlanceManager;
+    const tabs = [...new Set(gBrowser.selectedTabs.map(t => glance?.getTabOrGlanceParent?.(t) ?? t))]
+      .filter(t => !t.hasAttribute("zen-essential") && !t.hasAttribute("zen-empty-tab"));
+    if (!tabs.length) return;
+    try {
+      ws.moveTabsToWorkspace([...tabs], target.uuid); // Zen may reverse the list it's given
+      // land on the moved tab, as Zen's own Move to space does
+      if (ws.lastSelectedWorkspaceTabs) {
+        const last = tabs[tabs.length - 1];
+        ws.lastSelectedWorkspaceTabs[target.uuid] = last;
+      }
+      await ws.changeWorkspace(target);
+      flash(target, tabs.length > 1 ? `Moved ${tabs.length} tabs` : "Moved here");
+    } catch (err) {
+      console.error("[zen-custom space keys] Couldn't move the tab:", err);
+    }
+  }
+
+  // ---------- the name flash ----------
+
+  const css = `
+    #zc-space-flash { position: fixed; top: 14px; left: 50%; z-index: 2147483646; pointer-events: none;
+      transform: translate(-50%, -8px); opacity: 0; transition: opacity .16s ease, transform .16s ease;
+      padding: 6px 14px; border-radius: 999px; font: menu; font-size: 13px; font-weight: 600; white-space: nowrap;
+      color: light-dark(#fff, #111); background: light-dark(rgba(20,20,24,.88), rgba(245,245,247,.92));
+      box-shadow: 0 4px 18px rgba(0,0,0,.22); }
+    #zc-space-flash[show] { opacity: 1; transform: translate(-50%, 0); }
+    #zc-space-flash .muted { opacity: .65; font-weight: 500; }
+    @media (prefers-reduced-motion: reduce) { #zc-space-flash { transition: none; } }
+  `;
+  const pill = document.createElementNS(HTML, "div");
+  pill.id = "zc-space-flash";
+  const style = document.createElementNS(HTML, "style");
+  style.textContent = css;
+  (document.body || document.documentElement).append(style, pill);
+  let flashTimer = 0;
+
+  function flash(space, note) {
+    if (!sub("flash") || !space) return;
+    const all = window.gZenWorkspaces?.getWorkspaces() ?? [];
+    const pos = all.findIndex(w => w.uuid === space.uuid);
+    // emoji icons only; an SVG icon path would read as text
+    const icon = space.icon && !space.icon.endsWith(".svg") ? `${space.icon} ` : "";
+    const muted = document.createElementNS(HTML, "span");
+    muted.className = "muted";
+    muted.textContent = note ? ` · ${note}` : pos >= 0 ? ` · ${pos + 1} of ${all.length}` : "";
+    pill.replaceChildren(`${icon}${space.name}`, muted);
+    pill.setAttribute("show", "");
+    clearTimeout(flashTimer);
+    flashTimer = setTimeout(() => pill.removeAttribute("show"), 1100);
+  }
+
+  // Zen switches asynchronously; show the name once the space has changed.
+  function flashWhenSwitched(before) {
+    if (!sub("flash")) return;
+    const started = performance.now();
+    const check = () => {
+      const ws = window.gZenWorkspaces;
+      const now = ws?.activeWorkspace;
+      if (now && now !== before) {
+        flash(ws.getWorkspaceFromId(now));
+      } else if (performance.now() - started < 800) {
+        setTimeout(check, 30);
+      }
+    };
+    check();
+  }
+
+  // ---------- number badges while Alt is held ----------
+
+  // Shown after a short hold, so a quick Alt+key doesn't make them blink.
+  // Shift doesn't count as another key, so the numbers stay up while you aim
+  // Alt+Shift+number at a space.
+  let badgeTimer = 0;
+  let badgesShown = false;
+  const root = document.documentElement;
+  function hideBadges() {
+    clearTimeout(badgeTimer);
+    root.removeAttribute("zc-alt-held");
+  }
+  window.addEventListener("keydown", e => {
+    if (e.key === "Shift") return;
+    if (e.key !== "Alt") {
+      hideBadges();
+      badgesShown = false;
+      return;
+    }
+    if (e.repeat) return;
+    badgesShown = false;
+    if (e.ctrlKey || e.metaKey || e.getModifierState("AltGraph")) return;
+    if (!sub("badges") || ziaOwnsAltDigits()) return;
+    clearTimeout(badgeTimer);
+    badgeTimer = setTimeout(() => {
+      root.setAttribute("zc-alt-held", "");
+      badgesShown = true;
+    }, 250);
+  }, true);
+  window.addEventListener("keyup", e => {
+    if (e.key === "Alt") {
+      // Holding Alt just to read the numbers shouldn't also open the menu bar
+      // when Alt is let go.
+      if (badgesShown) e.preventDefault();
+      badgesShown = false;
+      hideBadges();
+    } else if (!e.altKey) {
+      hideBadges();
+    }
+  }, true);
+  window.addEventListener("blur", hideBadges);
+  window.addEventListener("mousedown", hideBadges, true);
 })();
