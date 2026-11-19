@@ -40,7 +40,10 @@
 
   // Zia's tab numbers (hold a key, type a tab's number) can be set to Alt,
   // and then Alt+digits are Zia's: only the arrows stay with spaces.
-  const ziaOwnsAltDigits = () => Services.prefs.getStringPref("zia.tab-numbers.key", "cmd") === "alt";
+  // Zia only listens for them while its tab-numbers feature is on.
+  const ziaOwnsAltDigits = () =>
+    Services.prefs.getBoolPref("zia.features.tab-numbers", true) &&
+    Services.prefs.getStringPref("zia.tab-numbers.key", "cmd") === "alt";
 
   // What a key press means: a space number (0-based), a step, or nothing.
   function action(e) {
@@ -64,6 +67,10 @@
     const a = action(e);
     if (!a || !enabled()) return;
     if (document.documentElement.hasAttribute("zen-little-window")) return;
+    // The Ctrl+Tab switcher (ctrl-tab-switcher.uc.js) uses the arrows while
+    // it's open, and Ctrl+Alt is still held after Ctrl+Alt+Space opened it.
+    // Script load order isn't guaranteed, so don't rely on it eating them first.
+    if ("step" in a && document.getElementById("zcts")?.hidden === false) return;
     e.preventDefault();
     e.stopImmediatePropagation();
     if (e.repeat || e.timeStamp === lastStamp) return;

@@ -40,5 +40,7 @@ installer asks.
   Ctrl+Alt+Left go to the next and previous space. Zen has the same keys,
   but a page that uses them gets them first, and since Zen 1.24 they live in
   about:keyboard where they can be changed or lost. This catches them before
-  the page and runs Zen's own switch command, so they always work. Toggle:
+  the page and runs Zen's own switch command, so they always work. Holding
+  the keys moves one space, not several. While it's on, these keys can't be
+  recorded as a different shortcut in about:keyboard. Toggle:
   `zen-custom.space-keys`.
