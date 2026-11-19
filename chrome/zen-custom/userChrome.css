@@ -15,6 +15,7 @@
 @import url("modules/container-dot.css");
 @import url("modules/smooth-topbar.css");
 @import url("modules/steady-sidebar.css");
+@import url("modules/space-badges.css");
 
 /* Extras, off by default */
 @import url("modules/compact-tabs.css");

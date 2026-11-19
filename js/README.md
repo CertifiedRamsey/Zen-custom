@@ -43,4 +43,9 @@ installer asks.
   the page and runs Zen's own switch command, so they always work. Holding
   the keys moves one space, not several. While it's on, these keys can't be
   recorded as a different shortcut in about:keyboard. Toggle:
-  `zen-custom.space-keys`.
+  `zen-custom.space-keys`. Extras, each with its own switch: the space's
+  name flashes at the top after a keyboard switch (`.flash`); holding Alt
+  shows each space icon's number, drawn by `modules/space-badges.css`
+  (`.badges`); Alt+Shift+number sends the tab you're on, or the selected
+  tabs, to that space (`.send`). Essentials stay put, as with Zen's own Move
+  to space.
