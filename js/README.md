@@ -49,6 +49,12 @@ installer asks.
   (`.badges`); Alt+Shift+number sends the tab you're on, or the selected
   tabs, to that space (`.send`). Essentials stay put, as with Zen's own Move
   to space.
+- `fake-terminal.uc.js`: Ctrl+Alt+L turns the window into a full-screen fake
+  coding terminal until Ctrl+T; every other key and click is swallowed
+  meanwhile. Built on start, removed on Ctrl+T. The PowerShell twin is
+  `tools/screensaver.ps1`, run as `zen ss` (install.ps1 puts a `zen.cmd`
+  in %LOCALAPPDATA%\zen-custom-cmd and adds that folder to your user PATH).
+  Toggle: `zen-custom.fake-terminal`.
 - `shortcut-guide.uc.js`: Ctrl+, opens a searchable panel of every
   shortcut. Zen's own (from a copy of Zen's about:keyboard groups) and
   Firefox's menu shortcuts are read key by key with their current binding,

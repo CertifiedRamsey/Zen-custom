@@ -70,7 +70,7 @@ $sineHere = (Test-Path $sineMods) -or (Test-Path (Join-Path (Join-Path $chrome "
 $scriptsReady = $false
 if ($scripts.Count -and -not $sineHere) {
   Write-Host "Sine isn't installed in this profile, so the script features (Routes, Tab Monitor, Ctrl+Tab," -ForegroundColor Yellow
-  Write-Host "Folder style, PDF night mode, Space keys, Shortcut guide) can't run" -ForegroundColor Yellow
+  Write-Host "Folder style, PDF night mode, Space keys, Shortcut guide, Fake terminal) can't run" -ForegroundColor Yellow
   Write-Host "(everything else works). Install Sine, then run this installer again." -ForegroundColor Yellow
 } elseif ($scripts.Count) {
   try {
@@ -92,7 +92,7 @@ if ($scripts.Count -and -not $sineHere) {
     $entry = [ordered]@{
       id           = "zen-custom"
       name         = "zen-custom"
-      description  = "Routes, Tab Monitor, Ctrl+Tab switcher, Folder style, PDF night mode, Space keys and Shortcut guide from the zen-custom repo. Its installer keeps this up to date."
+      description  = "Routes, Tab Monitor, Ctrl+Tab switcher, Folder style, PDF night mode, Space keys, Shortcut guide and Fake terminal from the zen-custom repo. Its installer keeps this up to date."
       version      = $version
       updatedAt    = (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", [Globalization.CultureInfo]::InvariantCulture)
       scripts      = $entryScripts
@@ -126,7 +126,7 @@ foreach ($line in [IO.File]::ReadAllLines((Join-Path $repo "user.js"), [Text.Enc
 # "Enable installing JS from unofficial sources" (sine.allow-unsafe-js) is on.
 if ($scriptsReady -and $prefsText -notmatch 'user_pref\("sine\.allow-unsafe-js",\s*true\)') {
   Write-Host ""
-  Write-Host "Routes, Tab Monitor, Ctrl+Tab, Folder style, PDF night mode, Space keys and Shortcut guide are scripts. Sine only"
+  Write-Host "Routes, Tab Monitor, Ctrl+Tab, Folder style, PDF night mode, Space keys, Shortcut guide and Fake terminal are scripts. Sine only"
   Write-Host "runs scripts that don't come from its own store when its setting"
   Write-Host "'Enable installing JS from unofficial sources' is on."
   Write-Host "These are your own scripts from this repo."
@@ -164,6 +164,31 @@ if (Test-Path $uj) {
 }
 $keep += 'user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true); // zen-custom'
 [IO.File]::WriteAllText($uj, ($keep -join "`r`n") + "`r`n", $utf8)
+
+# The "zen" command for PowerShell and cmd (zen ss = fake coding screensaver).
+# A small zen.cmd in its own folder on your user PATH, so it works without
+# changing PowerShell's script policy. New terminal windows pick it up.
+try {
+  $cmdDir = Join-Path $env:LOCALAPPDATA "zen-custom-cmd"
+  New-Item -ItemType Directory -Force $cmdDir | Out-Null
+  Copy-Item (Join-Path (Join-Path $repo "tools") "*.ps1") $cmdDir -Force
+  $cmdFile = '@powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%~dp0zen.ps1" %*'
+  [IO.File]::WriteAllText((Join-Path $cmdDir "zen.cmd"), $cmdFile + "`r`n", (New-Object System.Text.ASCIIEncoding))
+  # read and write the user PATH as stored, keeping entries like %USERPROFILE%\...
+  $envKey = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey("Environment", $true)
+  $userPath = [string]$envKey.GetValue("Path", "", [Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames)
+  if (-not (@($userPath -split ";") | Where-Object { $_.TrimEnd('\') -ieq $cmdDir })) {
+    $newPath = if ($userPath) { $userPath.TrimEnd(";") + ";" + $cmdDir } else { $cmdDir }
+    $envKey.SetValue("Path", $newPath, [Microsoft.Win32.RegistryValueKind]::ExpandString)
+    # tell Windows, so terminals opened from now on see it
+    [Environment]::SetEnvironmentVariable("ZEN_CUSTOM_PATH_REFRESH", "1", "User")
+    [Environment]::SetEnvironmentVariable("ZEN_CUSTOM_PATH_REFRESH", $null, "User")
+  }
+  $envKey.Close()
+  Write-Host "The 'zen' command is ready in new PowerShell windows (try: zen ss)."
+} catch {
+  Write-Host "Couldn't add the 'zen' command ($($_.Exception.Message)). Everything else is installed." -ForegroundColor Yellow
+}
 
 Write-Host "Done: zen-custom $version. Open Zen to see the changes." -ForegroundColor Green
 Write-Host "Once it looks right, run: powershell -ExecutionPolicy Bypass -File .\install\check.ps1 -MarkGood"
