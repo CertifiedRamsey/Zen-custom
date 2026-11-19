@@ -113,11 +113,13 @@ export function useDebouncedSearch<T>(fetcher: (q: string) => Promise<T[]>, dela
     if (cls) s.className = cls;
     s.textContent = text;
     out.insertBefore(s, caret);
+    if (term) trim();
     return s;
   }
   // keep the screen short: old lines scroll off and are dropped
   function trim() {
-    while (term.scrollHeight > term.clientHeight + 40 && out.firstChild !== caret) out.firstChild.remove();
+    while (term.scrollHeight > term.clientHeight && out.firstChild !== caret) out.firstChild.remove();
+    term.scrollTop = term.scrollHeight;
   }
   const newline = () => { span(null, "\n"); trim(); };
 
@@ -222,10 +224,39 @@ export function useDebouncedSearch<T>(fetcher: (q: string) => Promise<T[]>, dela
     if (e.type === "keydown" && e.ctrlKey && !e.altKey && !e.shiftKey && !e.metaKey && e.code === "KeyT") stop();
   }
   const KEY_EVENTS = ["keydown", "keyup", "keypress"];
-  const MOUSE_EVENTS = ["mousedown", "mouseup", "click", "dblclick", "auxclick", "contextmenu", "wheel"];
+  // AppCommand: mouse side buttons and media keys (back, forward ...)
+  const MOUSE_EVENTS = ["mousedown", "mouseup", "click", "dblclick", "auxclick", "contextmenu", "wheel",
+    "AppCommand", "mousemove", "mouseover", "pointerdown", "pointerup", "touchstart"];
+  // The window root comes before the window on every event's way in, so
+  // nothing (Zen, Firefox, the other zen-custom scripts, other mods) sees a
+  // key or click before this does.
+  const root = () => window.windowRoot || window;
 
-  function start() {
+  // Holding Ctrl+T: its repeats after the screen ends mustn't open new tabs.
+  function eatHeldT(e) {
+    if (e.code !== "KeyT") return;
+    if (e.type === "keydown" && !e.repeat && !e.ctrlKey) {
+      // a fresh "t" (the key was let go unnoticed): back to normal
+      root().removeEventListener("keydown", eatHeldT, true);
+      root().removeEventListener("keyup", eatHeldT, true);
+      return;
+    }
+    swallow(e);
+    if (e.type === "keyup") {
+      root().removeEventListener("keydown", eatHeldT, true);
+      root().removeEventListener("keyup", eatHeldT, true);
+    }
+  }
+
+  async function start() {
     if (term) return;
+    // a full-screen video sits above everything; leave it first
+    if (document.fullscreenElement) {
+      const left = new Promise(r => document.addEventListener("fullscreenchange", r, { once: true }));
+      document.exitFullscreen();
+      await Promise.race([left, new Promise(r => setTimeout(r, 1000))]);
+      if (term) return;
+    }
     if (!document.getElementById("zc-fake-term-style")) {
       const style = document.createElementNS(HTML, "style");
       style.id = "zc-fake-term-style";
@@ -241,8 +272,8 @@ export function useDebouncedSearch<T>(fetcher: (q: string) => Promise<T[]>, dela
     out.append(caret);
     term.append(out);
     (document.body || document.documentElement).append(term);
-    for (const t of KEY_EVENTS) window.addEventListener(t, onKey, true);
-    for (const t of MOUSE_EVENTS) window.addEventListener(t, swallow, { capture: true, passive: false });
+    for (const t of KEY_EVENTS) root().addEventListener(t, onKey, true);
+    for (const t of MOUSE_EVENTS) root().addEventListener(t, swallow, { capture: true, passive: false });
     // keyboard focus off the page, so nothing typed reaches it
     term.tabIndex = -1;
     term.focus();
@@ -256,8 +287,10 @@ export function useDebouncedSearch<T>(fetcher: (q: string) => Promise<T[]>, dela
     clearTimeout(timer);
     term.remove();
     term = out = caret = null;
-    for (const t of KEY_EVENTS) window.removeEventListener(t, onKey, true);
-    for (const t of MOUSE_EVENTS) window.removeEventListener(t, swallow, { capture: true });
+    for (const t of KEY_EVENTS) root().removeEventListener(t, onKey, true);
+    for (const t of MOUSE_EVENTS) root().removeEventListener(t, swallow, { capture: true });
+    root().addEventListener("keydown", eatHeldT, true);
+    root().addEventListener("keyup", eatHeldT, true);
     if (!wasFullScreen && window.fullScreen) window.fullScreen = false;
     gBrowser.selectedBrowser?.focus();
   }

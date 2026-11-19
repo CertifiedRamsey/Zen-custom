@@ -186,7 +186,7 @@ function Show-Build([string]$folder) {
   [Console]::Write("`r")
   Write-Color "[build] " DarkGray
   Write-Color "done in $([Math]::Round((Get-Random -Minimum 18 -Maximum 95) / 10, 1))s" Green
-  [Console]::Write(" " * ($width + 12))
+  [Console]::Write(" " * ($width + 24))
   [Console]::WriteLine(); [Console]::WriteLine()
   Wait 700
 }
@@ -208,12 +208,48 @@ $fullKey = if ($env:WT_SESSION) { "{F11}" } else { "%{ENTER}" }
 $shell = $null
 try { $shell = New-Object -ComObject WScript.Shell } catch { }
 function Toggle-FullScreen { if ($shell) { try { $shell.SendKeys($fullKey) } catch { } } }
+function Get-Size { $s = $raw.WindowSize; "$($s.Width)x$($s.Height)" }
+
+# Console settings for the run: Ctrl+Break does nothing either, and a mouse
+# click doesn't start a selection that would freeze the screen (QuickEdit).
+$console = $null
+try {
+  Add-Type -ErrorAction Stop @"
+using System;
+using System.Runtime.InteropServices;
+public static class ZenSsConsole {
+  public delegate bool Handler(int type);
+  static Handler keep = t => true;
+  [DllImport("kernel32.dll")] static extern bool SetConsoleCtrlHandler(Handler h, bool add);
+  [DllImport("kernel32.dll")] static extern IntPtr GetStdHandle(int n);
+  [DllImport("kernel32.dll")] static extern bool GetConsoleMode(IntPtr h, out uint m);
+  [DllImport("kernel32.dll")] static extern bool SetConsoleMode(IntPtr h, uint m);
+  static uint saved; static bool haveSaved;
+  public static void Begin() {
+    SetConsoleCtrlHandler(keep, true);
+    IntPtr h = GetStdHandle(-10); uint m;
+    if (GetConsoleMode(h, out m)) { saved = m; haveSaved = true; SetConsoleMode(h, (m & ~0x40u) | 0x80u); }
+  }
+  public static void End() {
+    if (haveSaved) SetConsoleMode(GetStdHandle(-10), saved);
+    SetConsoleCtrlHandler(keep, false);
+  }
+}
+"@
+  $console = $true
+} catch { }
 
 [Console]::TreatControlCAsInput = $true
 $cursor = $true
 try { $cursor = [Console]::CursorVisible } catch { }
+$fullSize = $null
 try {
+  if ($console) { try { [ZenSsConsole]::Begin() } catch { } }
+  # Only undo full screen at the end if this made it full screen and it still is.
+  $before = Get-Size
   Toggle-FullScreen
+  Start-Sleep -Milliseconds 350
+  if ((Get-Size) -ne $before) { $fullSize = Get-Size }
   $raw.WindowTitle = "Windows PowerShell"
   [Console]::BackgroundColor = [ConsoleColor]::Black
   Clear-Host
@@ -241,11 +277,13 @@ try {
 } catch {
   if ($_.Exception.Message -ne "zen-ss-quit") { throw }
 } finally {
+  # console mode first (it was saved with Ctrl+C already off), then Ctrl+C back on
+  if ($console) { try { [ZenSsConsole]::End() } catch { } }
   [Console]::TreatControlCAsInput = $false
   try { [Console]::CursorVisible = $cursor } catch { }
   $raw.WindowTitle = $origTitle
   [Console]::ForegroundColor = $origFg
   [Console]::BackgroundColor = $origBg
   Clear-Host
-  Toggle-FullScreen
+  if ($fullSize -and (Get-Size) -eq $fullSize) { Toggle-FullScreen }
 }

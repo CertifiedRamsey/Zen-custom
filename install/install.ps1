@@ -170,10 +170,12 @@ $keep += 'user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true)
 # changing PowerShell's script policy. New terminal windows pick it up.
 try {
   $cmdDir = Join-Path $env:LOCALAPPDATA "zen-custom-cmd"
-  New-Item -ItemType Directory -Force $cmdDir | Out-Null
-  Copy-Item (Join-Path (Join-Path $repo "tools") "*.ps1") $cmdDir -Force
-  $cmdFile = '@powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%~dp0zen.ps1" %*'
-  [IO.File]::WriteAllText((Join-Path $cmdDir "zen.cmd"), $cmdFile + "`r`n", (New-Object System.Text.ASCIIEncoding))
+  $libDir = Join-Path $cmdDir "lib"
+  New-Item -ItemType Directory -Force $libDir | Out-Null
+  # only zen.cmd sits on PATH: a .ps1 there would win over it in PowerShell
+  Remove-Item (Join-Path $cmdDir "*.ps1") -Force -ErrorAction SilentlyContinue
+  Copy-Item (Join-Path (Join-Path $repo "tools") "screensaver.ps1") $libDir -Force
+  Copy-Item (Join-Path (Join-Path $repo "tools") "zen.cmd") $cmdDir -Force
   # read and write the user PATH as stored, keeping entries like %USERPROFILE%\...
   $envKey = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey("Environment", $true)
   $userPath = [string]$envKey.GetValue("Path", "", [Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames)
