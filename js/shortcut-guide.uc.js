@@ -485,27 +485,32 @@
     };
     const out = { at: Date.now() };
     await Promise.all([
-      get(ZC_VERSION_URL).then(r => r.text()).then(t => { out.zc = t.trim(); }),
+      get(`${ZC_VERSION_URL}?t=${Date.now()}`).then(r => r.text()).then(t => { out.zc = t.trim(); }),
       get(ZC_COMMITS_URL).then(r => r.json()).then(j => { out.zcDate = new Date(j[0].commit.committer.date); }),
       get(ZEN_RELEASE_URL).then(r => r.json()).then(j => { out.zen = j.tag_name; out.zenDate = new Date(j.published_at); }),
     ].map(p => p.catch(e => console.warn("[zen-custom shortcut guide] Couldn't check GitHub:", e))));
-    if (out.zc || out.zen) newestCache = out; // a failed check is tried again next time
+    if (out.zc && out.zcDate && out.zen) newestCache = out; // anything missing is asked again next time
     return out;
   }
 
-  const sameVersion = (a, b) => String(a ?? "").replace(/^v/, "") === String(b ?? "").replace(/^v/, "");
+  const plain = v => String(v ?? "").replace(/^v/, "");
+  const sameVersion = (a, b) => plain(a) === plain(b);
+  function compareVersions(a, b) {
+    try { return Services.vc.compare(plain(a), plain(b)); } catch { return sameVersion(a, b) ? 0 : -1; }
+  }
   function newestText(have, latest, date, how) {
     if (!latest) return "Couldn't check GitHub for the newest";
-    return sameVersion(have, latest)
-      ? `Up to date (newest is ${latest}, ${day(date)})`
-      : `Newest is ${latest} (${day(date)}): ${how}`;
+    const cmp = compareVersions(have, latest);
+    if (cmp === 0) return `Up to date (newest is ${latest}, ${day(date)})`;
+    if (cmp > 0) return `Newer than GitHub's ${latest} (${day(date)})`;
+    return `Newest is ${latest} (${day(date)}): ${how}`;
   }
 
   async function versionRows() {
     const zc = await installedZenCustom();
     const zen = installedZen();
     const firefox = zen.firefox && !sameVersion(zen.firefox, zen.version) ? ` (Firefox ${zen.firefox})` : "";
-    const also = "version versions update updated updates up to date newest latest about";
+    const also = "version versions update updated updates uptodate latest";
     return [
       { title: `zen-custom ${zc.version}, installed ${dayTime(zc.date)}`, also, info: true,
         later: n => newestText(zc.version, n.zc, n.zcDate, "run the update command") },
@@ -739,6 +744,7 @@
         if (k.info) {
           // shown only when searched for; the right side fills in from GitHub
           row._zcInfo = k;
+          row._zcAlso = k.also.split(/\s+/);
           row.classList.add("info");
           row.append(el("span", "sub", "Checking GitHub …"));
           infos.push(row);
@@ -791,8 +797,9 @@
       const keyQuery = shortcutQuery(q);
       let shown = 0;
       for (const row of rows) {
+        // version rows: only for their own words ("ver", "update", "latest" …)
         const hit = row._zcInfo
-          ? !keyQuery && words.length > 0 && words.every(w => row._zcFind.includes(w))
+          ? !keyQuery && words.length > 0 && words.every(w => w.length >= 3 && row._zcAlso.some(a => a.startsWith(w)))
           : keyQuery ? keyQuery(row._zcCaps) : words.every(w => row._zcFind.includes(w));
         row.hidden = !hit;
         if (hit) shown++;
