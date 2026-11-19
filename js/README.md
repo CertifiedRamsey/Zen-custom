@@ -61,9 +61,12 @@ installer asks.
   avoiding Zen's full-list call, which would load DevTools. Add-ons' come
   from the add-ons you have on. Zia's and zen-custom's own come from short
   lists in the script, each shown only while its feature is on (keep them
-  in step when those shortcuts change). An "Open" list at the top opens
-  Zen/Zia settings, Sine mods, Zen's Library on Downloads or History,
-  bookmarks, passwords, add-ons, clear data, about:keyboard, about:config,
-  the profile folder, and restarts Zen (Enter opens the highlighted one;
-  Zia settings go through Zia's own ⋯ menu item). Built on open and removed on close. Toggle:
+  in step when those shortcuts change). "Open" and "Spaces and
+  containers" lists at the top run Zen's own commands (cmd_zen*, Firefox's
+  Tools:/Browser: commands, ZenSettings.open(pane), the + on Zen's Containers
+  page for a new container, Zia's own ⋯ menu item for Zia settings). A row is
+  listed only when its command exists; a failure shows in the footer. Enter
+  picks only an item whose words start with what you typed, never Restart,
+  which asks twice. Containers named "Patient …" (Temporary Containers) are
+  left out. Built on open and removed on close. Toggle:
   `zen-custom.shortcut-guide`.

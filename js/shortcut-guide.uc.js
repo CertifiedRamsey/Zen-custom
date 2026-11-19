@@ -8,9 +8,12 @@
 // a panel opens in the middle of the window listing every shortcut, with a
 // search box. Esc, Ctrl+, again or a click outside closes it.
 //
-// At the top, "Open" lists places you go to often: Zen's and Zia's settings,
-// Sine mods, downloads, history, bookmarks, passwords, add-ons and more. Type
-// a few letters and press Enter, or click one.
+// At the top, "Open" and "Spaces and containers" list places you'd otherwise
+// go through the sidebar or menus for: Zen's and Zia's settings (and Zen's
+// settings pages), Sine mods, downloads, history, new space, rename space,
+// new container, a new tab in each of your containers, and more. Each runs
+// Zen's own command and is listed only when this Zen has it. Type a few
+// letters and press Enter, or click one. Restart asks twice.
 //
 // Zen's and Firefox's shortcuts (Zen's own plus everything in Firefox's
 // menus) are read live, so a shortcut you change in about:keyboard shows up
@@ -278,85 +281,150 @@
   }
 
   // ---------- things the guide opens ----------
+  //
+  // Each item runs the same command Zen's own menus and buttons run, and is
+  // only listed when that command exists in this Zen, so a row can't sit
+  // there doing nothing. If one still fails, the row says so.
 
   const openTab = url => switchToTabHavingURI(url, true, { ignoreFragment: "whenComparingAndReplace" });
-  // a command from Firefox's own menus; false if this Zen doesn't have it
+  const hasCommand = id => {
+    const cmd = document.getElementById(id);
+    return !!cmd && cmd.getAttribute("disabled") !== "true";
+  };
   const runCommand = id => {
     const cmd = document.getElementById(id);
-    if (!cmd) return false;
+    if (!cmd) throw new Error(`Zen has no ${id} here`);
     cmd.doCommand();
-    return true;
   };
-  // Zen's Library (the panel with History, Downloads, Spaces ...) on one section
-  const zenLibrary = section => {
-    const Library = customElements.get("zen-library");
-    if (typeof Library?.toggle !== "function" || !Services.prefs.getBoolPref("zen.library.enabled", false)) return false;
-    Library.toggle(section);
-    return true;
-  };
+  const command = id => ({ ok: () => hasCommand(id), run: () => runCommand(id) });
 
-  // Zia only opens its settings from its "Zia Settings" item in the ⋯ menu,
-  // which it adds the first time that menu opens.
+  // Zen's settings window (Zen 1.24+), optionally on one page of it
+  function zenSettings() {
+    try {
+      return ChromeUtils.importESModule("resource:///modules/zen/settings/ZenSettings.sys.mjs").ZenSettings;
+    } catch {
+      return null;
+    }
+  }
+  const settingsPage = pane => ({ ok: () => !!zenSettings(), run: () => zenSettings().open(pane) });
+
+  // Containers on, and the ones you made yourself (not Temporary Containers'
+  // throwaway "Patient …" ones)
+  const containersOn = () => Services.prefs.getBoolPref("privacy.userContext.enabled", false);
+  function containerService() {
+    if (window.ContextualIdentityService) return window.ContextualIdentityService;
+    for (const url of ["moz-src:///toolkit/components/contextualidentity/ContextualIdentityService.sys.mjs",
+      "resource://gre/modules/ContextualIdentityService.sys.mjs"]) {
+      try { return ChromeUtils.importESModule(url).ContextualIdentityService; } catch {}
+    }
+    return null;
+  }
+  function myContainers() {
+    if (!containersOn()) return [];
+    const service = containerService();
+    if (!service) return [];
+    return service.getPublicIdentities()
+      .map(c => ({ id: c.userContextId, name: service.getUserContextLabel(c.userContextId) }))
+      .filter(c => c.name && !/^patient\b/i.test(c.name));
+  }
+
+  // "New container" is the + button on Zen's Containers settings page; this
+  // opens that page and presses it, so you get Zen's own form.
+  async function newContainer() {
+    const settings = zenSettings();
+    const win = settings.open("containers");
+    for (let i = 0; i < 40; i++) { // up to 4 s while the window loads
+      const add = win.document?.readyState === "complete" && win.gZenSettingsWindow &&
+        win.document.querySelector('[data-action="containers-add"]');
+      if (add) {
+        add.click();
+        return;
+      }
+      await new Promise(r => setTimeout(r, 100));
+    }
+    throw new Error("Zen's Containers page has no add button");
+  }
+
+  // Zia opens its settings only from the "Zia Settings" item it adds to the
+  // ⋯ menu the first time that menu opens.
   async function openZiaSettings() {
     let item = document.getElementById("zia-settings-menu-button");
     if (!item) {
       const popup = document.getElementById("appMenu-popup");
       const shown = new Promise(done => {
-        popup?.addEventListener("popupshown", done, { once: true });
-        setTimeout(done, 1500);
+        popup?.addEventListener("popupshown", () => done(true), { once: true });
+        setTimeout(() => done(false), 5000);
       });
       PanelUI.show();
-      await shown;
+      const opened = await shown;
       item = document.getElementById("zia-settings-menu-button");
+      if (!item) {
+        if (opened) PanelUI.hide();
+        openPreferences("paneSineMods"); // Zia's settings are also under Zia there
+        return;
+      }
     }
-    if (item) {
-      item.doCommand(); // closes the ⋯ menu too
-    } else {
-      PanelUI.hide();
-      openPreferences("paneSineMods"); // Zia's settings are also under Zia there
-    }
+    item.doCommand(); // also closes the ⋯ menu
   }
 
   function restartZen() {
+    // the same steps as Firefox's own Restart (about:support): open pages
+    // can say no, and Zen brings your windows and tabs back
     const cancel = Cc["@mozilla.org/supports-PRBool;1"].createInstance(Ci.nsISupportsPRBool);
     Services.obs.notifyObservers(cancel, "quit-application-requested", "restart");
-    if (cancel.data) return; // something asked to stay open (e.g. a page with unsaved work)
-    Services.prefs.setBoolPref("browser.sessionstore.resume_session_once", true); // tabs come back
+    if (cancel.data) return;
     Services.startup.quit(Ci.nsIAppStartup.eAttemptQuit | Ci.nsIAppStartup.eRestart);
   }
 
-  // [title, words people search with, what it does, key whose shortcut does the same]
+  const always = () => true;
+
+  // Rows: section, title, words people search with, then how it runs.
+  // key: a shortcut that does exactly the same, shown on the row.
+  // confirm: asks for a second Enter or click first.
   function openItems() {
+    const zia = document.documentElement.hasAttribute("zia-js");
     const items = [
-      ["Zen settings", "preferences options settings", () => openPreferences()],
+      ["Open", "Zen settings", "settings preferences options", { ok: always, run: () => openPreferences() }],
+      ["Open", "Zia settings", "zia settings mod theme options", { ok: () => zia, run: openZiaSettings }],
+      ["Open", "Sine mods (switch mods on or off)", "sine mods themes store", { ok: always, run: () => openPreferences("paneSineMods") }],
+      ["Open", "Downloads", "downloads files", command("Tools:Downloads")],
+      ["Open", "History", "history visited", command("Browser:ShowAllHistory")],
+      ["Open", "Bookmarks", "bookmarks favourites favorites", { ...command("Browser:ShowAllBookmarks"), key: "manBookmarkKb" }],
+      ["Open", "Passwords", "passwords logins", { ok: always, run: () => {
+        const { LoginHelper } = ChromeUtils.importESModule("resource://gre/modules/LoginHelper.sys.mjs");
+        LoginHelper.openPasswordManager(window, { entryPoint: "mainmenu" });
+      } }],
+      ["Open", "Add-ons and extensions", "addons add-ons extensions", { ...command("Tools:Addons"), key: "key_openAddons" }],
+      ["Open", "Clear browsing data (cookies, cache, history)", "clear cookies cache wipe", { ...command("Tools:Sanitize"), key: "key_sanitize" }],
+      ["Open", "Zen settings: Look and feel", "appearance look feel theme colours colors", settingsPage("appearance")],
+      ["Open", "Zen settings: Tabs", "tabs settings", settingsPage("tabs")],
+      ["Open", "Zen settings: Links", "links settings", settingsPage("links")],
+      ["Open", "Zen settings: Search engine", "search engine settings google", settingsPage("search")],
+      ["Open", "Zen settings: Keyboard shortcuts (change them)", "keyboard shortcuts keys change rebind", settingsPage("shortcuts")],
+      ["Open", "Zen settings: Privacy", "privacy security permissions cookies", settingsPage("privacy")],
+      ["Open", "Advanced settings (about:config)", "about:config advanced prefs config zen-custom", { ok: always, run: () => openTab("about:config") }],
+      ["Open", "Profile folder (where zen-custom is installed)", "profile folder chrome explorer zen-custom", { ok: always, run: () => {
+        Services.dirsvc.get("ProfD", Ci.nsIFile).launch();
+      } }],
+      ["Open", "Restart Zen", "restart relaunch reboot", { ok: always, run: restartZen, confirm: "Press Enter or click again to restart Zen" }],
+
+      ["Spaces and containers", "New space", "new space create workspace", command("cmd_zenOpenWorkspaceCreation")],
+      ["Spaces and containers", "Rename this space", "rename space name workspace", command("cmd_zenChangeWorkspaceName")],
+      ["Spaces and containers", "Change this space's icon", "space icon emoji workspace", command("cmd_zenChangeWorkspaceIcon")],
+      ["Spaces and containers", "All spaces (Library)", "manage spaces workspaces library", command("cmd_zenManageWorkspaces")],
+      ["Spaces and containers", "Space routing (which sites open in which space)", "space routing routes rules", command("cmd_zenOpenSpaceRoutingSettings")],
+      ["Spaces and containers", "New folder", "new folder group", command("cmd_zenOpenFolderCreation")],
+      ["Spaces and containers", "Containers (edit, reorder, delete)", "containers manage edit settings", { ok: () => containersOn() && !!zenSettings(), run: () => zenSettings().open("containers") }],
+      ["Spaces and containers", "New container", "new container create add", { ok: () => containersOn() && !!zenSettings(), run: newContainer }],
     ];
-    if (document.documentElement.hasAttribute("zia-js")) {
-      items.push(["Zia settings", "zia mod theme options preferences", openZiaSettings]);
+    for (const c of myContainers()) {
+      items.push(["Spaces and containers", `New tab in ${c.name} container`, `container tab new ${c.name}`,
+        { ok: always, run: () => openTrustedLinkIn(BROWSER_NEW_TAB_URL, "tab", { userContextId: c.id }),
+          pick: `${c.name} container` }]); // Enter picks it for its name, not for "tab"
     }
-    items.push(
-      ["Sine mods (switch mods on or off)", "sine mods themes marketplace store zia", () => openPreferences("paneSineMods")],
-      ["Downloads", "downloads files saved", () => zenLibrary("downloads") || runCommand("Tools:Downloads") || openTab("about:downloads")],
-      ["History", "history visited past pages", () => zenLibrary("history") || runCommand("Browser:ShowAllHistory")],
-      ["Bookmarks", "bookmarks favourites favorites saved library", () => runCommand("Browser:ShowAllBookmarks"), "manBookmarkKb"],
-      ["Passwords", "passwords logins credentials", () => {
-        try {
-          const { LoginHelper } = ChromeUtils.importESModule("resource://gre/modules/LoginHelper.sys.mjs");
-          LoginHelper.openPasswordManager(window, { entryPoint: "mainmenu" });
-        } catch {
-          openTab("about:logins");
-        }
-      }],
-      ["Add-ons and extensions", "addons add-ons extensions plugins themes", () => runCommand("Tools:Addons") || openTab("about:addons"), "key_openAddons"],
-      ["Clear browsing data (cookies, cache, history)", "clear delete cookies cache history data wipe", () => runCommand("Tools:Sanitize"), "key_sanitize"],
-      ["Change keyboard shortcuts", "keyboard shortcuts keys change rebind about:keyboard", () => openTab("about:keyboard")],
-      ["Advanced settings (about:config)", "about:config advanced prefs config hidden settings zen-custom", () => openTab("about:config")],
-      ["Profile folder (where zen-custom is installed)", "profile folder chrome files explorer zen-custom", () => {
-        const dir = Services.dirsvc.get("ProfD", Ci.nsIFile);
-        try { dir.launch(); } catch { dir.reveal(); }
-      }],
-      ["Restart Zen (your tabs come back)", "restart relaunch reboot browser", restartZen],
-    );
-    return items;
+    return items.filter(([, , , how]) => {
+      try { return how.ok(); } catch { return false; }
+    });
   }
 
   // A key's current shortcut, from Zen (null if it has none).
@@ -406,6 +474,7 @@
       border: 1px solid light-dark(rgba(0,0,0,.1), rgba(255,255,255,.1)); border-bottom-width: 2px; }
     #zc-keys-guide [hidden] { display: none !important; }
     #zc-keys-guide .empty { padding: 28px 8px; text-align: center; color: light-dark(#8a8a90, #8c8c94); }
+    #zc-keys-guide .foot.bad { color: light-dark(#b42318, #ff8a80); }
     #zc-keys-guide .foot { padding: 8px 16px; font-size: 12px; color: light-dark(#8a8a90, #8c8c94);
       border-top: 1px solid light-dark(rgba(0,0,0,.07), rgba(255,255,255,.07)); }
     /* Light or dark exactly as Zen's own pop-ups (Settings > Look and Feel). */
@@ -467,6 +536,7 @@
   let returnFocus = null;
 
   let cancelled = false;
+  let lastError = null; // shown once in the footer when an item failed to open
 
   async function open() {
     if (overlay || opening) return;
@@ -475,11 +545,13 @@
     returnFocus = document.commandDispatcher?.focusedElement ?? null;
     try {
       const browser = await browserShortcuts();
-      const sections = [
-        { label: "Open", keys: openItems().map(([title, also, run, key]) =>
-          ({ title, also, run, shortcut: key ? readKey(key) : null })) },
-        { label: "zen-custom", keys: ourShortcuts(), mine: true },
-      ];
+      const sections = [];
+      for (const [label, title, also, how] of openItems()) {
+        let sec = sections.find(s => s.label === label);
+        if (!sec) sections.push(sec = { label, keys: [] });
+        sec.keys.push({ title, also, run: how.run, confirm: how.confirm, pick: how.pick, shortcut: how.key ? readKey(how.key) : null });
+      }
+      sections.push({ label: "zen-custom", keys: ourShortcuts(), mine: true });
       const zia = ziaShortcuts();
       if (zia.length) sections.push({ label: "Zia", keys: zia });
       const addons = await addonShortcuts();
@@ -508,7 +580,7 @@
     top.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="7" cy="7" r="4.6"/><path d="m10.5 10.5 3.5 3.5"/></svg>';
     const input = el("input");
     input.type = "search";
-    input.placeholder = "Search, or open: settings, downloads, history …";
+    input.placeholder = "Search, or open: settings, downloads, containers …";
     const count = el("span", "count");
     top.append(input, count);
 
@@ -525,8 +597,21 @@
     };
     const shownActs = () => acts.filter(r => !r.hidden);
     const run = row => {
+      // Restart asks once more first
+      if (row._zcConfirm && !row._zcArmed) {
+        row._zcArmed = true;
+        row.querySelector(".t").textContent = row._zcConfirm;
+        select(row);
+        return;
+      }
+      const title = row.title;
       close();
-      Promise.resolve().then(row._zcRun).catch(e => console.error("[zen-custom shortcut guide] Couldn't open that:", e));
+      Promise.resolve().then(row._zcRun).catch(e => {
+        console.error("[zen-custom shortcut guide] Couldn't open", title, e);
+        // say so, instead of quietly doing nothing
+        lastError = `Couldn't open “${title}” (${e?.message || e}). Tell Claude.`;
+        open();
+      });
     };
     for (const s of sections) {
       if (!s.keys.length) continue;
@@ -546,6 +631,9 @@
           row.classList.add("act");
           row.append(el("span", "go", "Open ↵"));
           row._zcRun = k.run;
+          row._zcConfirm = k.confirm;
+          // what Enter may pick on its own: words that start with what you type
+          row._zcWords = (k.pick ?? `${k.title} ${k.also ?? ""}`).toLowerCase().split(/[^\p{L}\p{N}:+-]+/u).filter(Boolean);
           row.addEventListener("click", () => run(row));
           row.addEventListener("mousemove", () => { if (sel !== row) select(row, false); });
           acts.push(row);
@@ -570,9 +658,11 @@
     empty.hidden = true;
     list.append(empty);
 
-    const foot = el("div", "foot", browserFailed
-      ? "Couldn't read Zen's own shortcuts this time; about:keyboard has the full list."
-      : "↑ ↓ choose, Enter opens, Esc closes. Full shortcut list: about:keyboard.");
+    const foot = el("div", "foot", lastError || (browserFailed
+      ? "Couldn't read Zen's own shortcuts this time; Zen settings > Keyboard shortcuts has the full list."
+      : "Type, then Enter opens the highlighted item. ↑ ↓ choose, Esc closes."));
+    if (lastError) foot.classList.add("bad");
+    lastError = null;
 
     box.append(top, list, foot);
     overlay.append(box);
@@ -593,8 +683,18 @@
       }
       empty.hidden = shown > 0;
       count.textContent = words.length ? `${shown} found` : `${rows.length - acts.length} shortcuts`;
-      // Enter opens the first match, or the top item before anything is typed
-      select(keyQuery ? null : shownActs()[0] ?? null, false);
+      // Enter opens the first item whose words start with what you typed;
+      // never Restart, and nothing before you type
+      // (a whole-word match beats a start: "work" picks the Work container)
+      let pick = null, best = 0;
+      if (!keyQuery && words.length) {
+        for (const r of shownActs()) {
+          if (r._zcConfirm || !words.every(w => r._zcWords.some(x => x.startsWith(w)))) continue;
+          const score = 1 + words.filter(w => r._zcWords.includes(w)).length;
+          if (score > best) { best = score; pick = r; }
+        }
+      }
+      select(pick, false);
     };
     input.addEventListener("input", filter);
     input.addEventListener("keydown", e => {
@@ -610,7 +710,11 @@
         const i = showing.indexOf(sel);
         const next = e.key === "ArrowDown" ? showing[i + 1] : showing[i - 1];
         if (next) select(next);
-        else list.scrollBy(0, e.key === "ArrowDown" ? 40 : -40);
+        else {
+          // past the list of things to open: just scroll, with nothing chosen
+          select(null);
+          list.scrollBy(0, e.key === "ArrowDown" ? 40 : -40);
+        }
         return;
       }
       const step = { ArrowDown: 40, ArrowUp: -40, PageDown: list.clientHeight - 40, PageUp: 40 - list.clientHeight }[e.key];
