@@ -277,6 +277,8 @@ try {
 } catch {
   if ($_.Exception.Message -ne "zen-ss-quit") { throw }
 } finally {
+  # a held Ctrl+T leaves repeats queued; don't hand them to the shell
+  try { while ([Console]::KeyAvailable) { [void][Console]::ReadKey($true) } } catch { }
   # console mode first (it was saved with Ctrl+C already off), then Ctrl+C back on
   if ($console) { try { [ZenSsConsole]::End() } catch { } }
   [Console]::TreatControlCAsInput = $false
@@ -285,5 +287,5 @@ try {
   [Console]::ForegroundColor = $origFg
   [Console]::BackgroundColor = $origBg
   Clear-Host
-  if ($fullSize -and (Get-Size) -eq $fullSize) { Toggle-FullScreen }
+  if ($fullSize -and (Get-Size) -ne $before) { Toggle-FullScreen }
 }

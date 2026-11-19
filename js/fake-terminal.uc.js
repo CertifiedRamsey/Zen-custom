@@ -250,6 +250,7 @@ export function useDebouncedSearch<T>(fetcher: (q: string) => Promise<T[]>, dela
 
   async function start() {
     if (term) return;
+    wasFullScreen = window.fullScreen && !document.fullscreenElement;
     // a full-screen video sits above everything; leave it first
     if (document.fullscreenElement) {
       const left = new Promise(r => document.addEventListener("fullscreenchange", r, { once: true }));
@@ -277,8 +278,7 @@ export function useDebouncedSearch<T>(fetcher: (q: string) => Promise<T[]>, dela
     // keyboard focus off the page, so nothing typed reaches it
     term.tabIndex = -1;
     term.focus();
-    wasFullScreen = window.fullScreen;
-    if (!wasFullScreen) window.fullScreen = true;
+    window.fullScreen = true;
     loop();
   }
 

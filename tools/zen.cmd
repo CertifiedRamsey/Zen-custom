@@ -1,4 +1,5 @@
 @echo off
+setlocal
 rem The "zen" command that zen-custom's installer adds (zen ss = fake coding screensaver).
 rem The screensaver is read as text and run, so it works even where PowerShell
 rem won't run script files (a school PC's policy).
