@@ -44,6 +44,7 @@ Each one can be switched off live in `about:config`:
 | `zen-custom.clean-toolbar` | Hides rarely used URL bar icons | off |
 | `zen-custom.clean-newtab` | Removes sponsored and news blocks from the new tab page | off |
 | `zen-custom.routes-helper` | A "Routes" button on each space card in the Library that walks you through sending sites to that space (JS, runs through Sine) | on |
+| `zen-custom.space-keys` | Switch-space shortcuts that always work, on every page and whatever about:keyboard says: Alt+1 to Alt+9 (Alt+0 = space 10) jump to a space, Ctrl+Alt+Right/Left go to the next/previous one (JS, runs through Sine) | on |
 
 Colors, radius and spacing live in `chrome/zen-custom/modules/tokens.css`.
 

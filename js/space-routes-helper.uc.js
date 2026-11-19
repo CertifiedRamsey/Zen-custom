@@ -92,8 +92,11 @@
     return el;
   };
 
+  // Zen 1.24.3 added "little-window" as a place a route can send links.
   const spaceName = id =>
-    id === MOST_RECENT ? "the space I used last" : gZenWorkspaces.getWorkspaceFromId(id)?.name ?? "a deleted space";
+    id === MOST_RECENT ? "the space I used last"
+      : id === "little-window" ? "a little window"
+      : gZenWorkspaces.getWorkspaceFromId(id)?.name ?? "a deleted space";
 
   function parseSite(raw) {
     let t = (raw || "").trim();

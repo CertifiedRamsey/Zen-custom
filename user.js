@@ -36,3 +36,4 @@ user_pref("zen-custom.clean-newtab", false);
 
 // JS features (run through Sine, see js/README.md)
 user_pref("zen-custom.routes-helper", true);
+user_pref("zen-custom.space-keys", true);

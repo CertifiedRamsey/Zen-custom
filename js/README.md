@@ -12,7 +12,8 @@ installer asks.
   in the Library. It opens a step-by-step builder that saves through Zen's own
   Space Routing, so routes also appear in Zen's settings and keep working
   without this script. Toggle: `zen-custom.routes-helper`. Written against
-  Zen 1.23.3b.
+  Zen 1.23.3b, checked against 1.24.3b. Zen 1.24 also has its own Space
+  Routing section in the Library; this button stays as the quicker way in.
 - `tab-monitor.uc.js`: Shift+Esc (or Ctrl+Alt+M) opens a panel of your tabs
   grouped by space, showing memory, CPU and whether each is awake or asleep,
   with one-click sleep per tab or space. Its toolbar button isn't placed
@@ -34,3 +35,10 @@ installer asks.
   the empty space Zen makes on its first start once your synced spaces arrive
   (only if you haven't put tabs in it), then switches itself off. Existing
   profiles are never touched. Toggle: `zen-custom.starter-space-cleanup`.
+- `space-keys.uc.js`: the switch-space shortcuts, kept working. Alt+1 to
+  Alt+9 (Alt+0 for space 10) jump to a space; Ctrl+Alt+Right and
+  Ctrl+Alt+Left go to the next and previous space. Zen has the same keys,
+  but a page that uses them gets them first, and since Zen 1.24 they live in
+  about:keyboard where they can be changed or lost. This catches them before
+  the page and runs Zen's own switch command, so they always work. Toggle:
+  `zen-custom.space-keys`.
