@@ -15,6 +15,9 @@
 // Zen's own command and is listed only when this Zen has it. Type a few
 // letters and press Enter, or click one. Restart asks twice.
 //
+// Type "version" to see which zen-custom and Zen you have and when they were
+// installed or built, next to the newest on GitHub.
+//
 // Zen's and Firefox's shortcuts (Zen's own plus everything in Firefox's
 // menus) are read live, so a shortcut you change in about:keyboard shows up
 // changed here. about:keyboard still has the complete list. Add-on shortcuts
@@ -439,6 +442,78 @@
     });
   }
 
+  // ---------- versions (type "version") ----------
+  //
+  // What's installed comes from this PC (Sine's mod list, written by
+  // install.ps1, and Zen itself). What's newest is asked from GitHub, only
+  // when the version rows show, at most every 10 minutes.
+
+  const ZC_VERSION_URL = "https://raw.githubusercontent.com/CertifiedRamsey/Zen-custom/main/VERSION";
+  const ZC_COMMITS_URL = "https://api.github.com/repos/CertifiedRamsey/Zen-custom/commits?path=VERSION&per_page=1";
+  const ZEN_RELEASE_URL = "https://api.github.com/repos/zen-browser/desktop/releases/latest";
+
+  const validDate = d => d instanceof Date && !isNaN(d) ? d : null;
+  const day = d => validDate(d)?.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) ?? "date unknown";
+  const dayTime = d => validDate(d)
+    ? `${day(d)}, ${d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}` : "date unknown";
+
+  async function installedZenCustom() {
+    try {
+      const path = PathUtils.join(PathUtils.profileDir, "chrome", "sine-mods", "mods.json");
+      const entry = (await IOUtils.readJSON(path))?.["zen-custom"];
+      return { version: String(entry?.version ?? "unknown"), date: entry?.updatedAt ? new Date(entry.updatedAt) : null };
+    } catch {
+      return { version: "unknown", date: null };
+    }
+  }
+
+  function installedZen() {
+    let version = null;
+    try { version = window.AppConstants?.MOZ_APP_VERSION_DISPLAY; } catch {}
+    version ||= Services.appinfo.version;
+    const m = /^(\d{4})(\d\d)(\d\d)/.exec(Services.appinfo.appBuildID || ""); // built yyyymmdd…
+    return { version, date: m ? new Date(+m[1], m[2] - 1, +m[3]) : null, firefox: Services.appinfo.platformVersion };
+  }
+
+  let newestCache = null;
+  async function newest() {
+    if (newestCache && Date.now() - newestCache.at < 10 * 60 * 1000) return newestCache;
+    const get = async url => {
+      const response = await fetch(url, { signal: AbortSignal.timeout(8000), cache: "no-store" });
+      if (!response.ok) throw new Error(`GitHub said ${response.status}`);
+      return response;
+    };
+    const out = { at: Date.now() };
+    await Promise.all([
+      get(ZC_VERSION_URL).then(r => r.text()).then(t => { out.zc = t.trim(); }),
+      get(ZC_COMMITS_URL).then(r => r.json()).then(j => { out.zcDate = new Date(j[0].commit.committer.date); }),
+      get(ZEN_RELEASE_URL).then(r => r.json()).then(j => { out.zen = j.tag_name; out.zenDate = new Date(j.published_at); }),
+    ].map(p => p.catch(e => console.warn("[zen-custom shortcut guide] Couldn't check GitHub:", e))));
+    if (out.zc || out.zen) newestCache = out; // a failed check is tried again next time
+    return out;
+  }
+
+  const sameVersion = (a, b) => String(a ?? "").replace(/^v/, "") === String(b ?? "").replace(/^v/, "");
+  function newestText(have, latest, date, how) {
+    if (!latest) return "Couldn't check GitHub for the newest";
+    return sameVersion(have, latest)
+      ? `Up to date (newest is ${latest}, ${day(date)})`
+      : `Newest is ${latest} (${day(date)}): ${how}`;
+  }
+
+  async function versionRows() {
+    const zc = await installedZenCustom();
+    const zen = installedZen();
+    const firefox = zen.firefox && !sameVersion(zen.firefox, zen.version) ? ` (Firefox ${zen.firefox})` : "";
+    const also = "version versions update updated updates up to date newest latest about";
+    return [
+      { title: `zen-custom ${zc.version}, installed ${dayTime(zc.date)}`, also, info: true,
+        later: n => newestText(zc.version, n.zc, n.zcDate, "run the update command") },
+      { title: `Zen ${zen.version}${firefox}, built ${day(zen.date)}`, also, info: true,
+        later: n => newestText(zen.version, n.zen, n.zenDate, "Zen updates itself, a restart finishes it") },
+    ];
+  }
+
   // A key's current shortcut, from Zen (null if it has none).
   function readKey(id) {
     try {
@@ -476,6 +551,11 @@
     #zc-keys-guide .row .t { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     #zc-keys-guide .row .mine { margin-left: 6px; font-size: 11px; color: var(--zen-primary-color, #5b6cff); }
     #zc-keys-guide .act { cursor: pointer; }
+    #zc-keys-guide .row .sub { flex: none; max-width: 55%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      font-size: 12px; color: light-dark(#6b6b72, #a0a0a8); }
+    #zc-keys-guide .row.info { flex-wrap: wrap; row-gap: 2px; }
+    #zc-keys-guide .row.info .t { white-space: normal; }
+    #zc-keys-guide .row.info .sub { flex-basis: 100%; max-width: none; white-space: normal; }
     #zc-keys-guide .row .ico { flex: none; width: 16px; height: 16px; margin-right: -8px;
       -moz-context-properties: fill; fill: currentColor; }
     #zc-keys-guide .act.sel { background: light-dark(rgba(0,0,0,.06), rgba(255,255,255,.08)); }
@@ -565,6 +645,7 @@
         if (!sec) sections.push(sec = { label, keys: [] });
         sec.keys.push({ title, also, run: how.run, confirm: how.confirm, pick: how.pick, icon: how.icon, shortcut: how.key ? readKey(how.key) : null });
       }
+      sections.push({ label: "Version", keys: await versionRows() });
       sections.push({ label: "zen-custom", keys: ourShortcuts(), mine: true });
       const zia = ziaShortcuts();
       if (zia.length) sections.push({ label: "Zia", keys: zia });
@@ -601,6 +682,8 @@
     const list = el("div", "list");
     const rows = [];
     const acts = []; // the rows that open something
+    const infos = []; // the version rows
+    let askedGitHub = false;
     let sel = null;  // the one Enter opens
     const select = (row, scroll = true) => {
       sel?.classList.remove("sel");
@@ -653,6 +736,13 @@
         const hay = `${k.title} ${k.shortcut ?? ""} ${s.label} ${k.also ?? ""}`.toLowerCase();
         row._zcFind = hay + ALSO.filter(([re]) => re.test(hay)).map(([, w]) => " " + w).join("");
         row._zcCaps = k.shortcut ? k.shortcut.toLowerCase().replace(/^hold /, "").split(/\+(?!$)/) : [];
+        if (k.info) {
+          // shown only when searched for; the right side fills in from GitHub
+          row._zcInfo = k;
+          row.classList.add("info");
+          row.append(el("span", "sub", "Checking GitHub …"));
+          infos.push(row);
+        }
         row.title = k.title;
         if (k.run) {
           row.classList.add("act");
@@ -701,7 +791,9 @@
       const keyQuery = shortcutQuery(q);
       let shown = 0;
       for (const row of rows) {
-        const hit = keyQuery ? keyQuery(row._zcCaps) : words.every(w => row._zcFind.includes(w));
+        const hit = row._zcInfo
+          ? !keyQuery && words.length > 0 && words.every(w => row._zcFind.includes(w))
+          : keyQuery ? keyQuery(row._zcCaps) : words.every(w => row._zcFind.includes(w));
         row.hidden = !hit;
         if (hit) shown++;
       }
@@ -709,7 +801,15 @@
         sec.hidden = !sec.querySelector(".row:not([hidden])");
       }
       empty.hidden = shown > 0;
-      count.textContent = words.length ? `${shown} found` : `${rows.length - acts.length} shortcuts`;
+      count.textContent = words.length ? `${shown} found` : `${rows.length - acts.length - infos.length} shortcuts`;
+      if (!askedGitHub && infos.some(r => !r.hidden)) {
+        askedGitHub = true;
+        const mine = overlay;
+        newest().then(n => {
+          if (overlay !== mine) return; // closed meanwhile
+          for (const r of infos) r.querySelector(".sub").textContent = r._zcInfo.later(n);
+        }).catch(() => {});
+      }
       // Enter opens the first item whose words start with what you typed;
       // never Restart, and nothing before you type
       // and only when every word is a whole word of it, or it's the only one

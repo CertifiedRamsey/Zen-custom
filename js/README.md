@@ -74,5 +74,8 @@ installer asks.
   listed only when its command exists; a failure shows in the footer. Enter
   picks only an item whose words start with what you typed, never Restart,
   which asks twice. Containers named "Patient …" (Temporary Containers) are
-  left out. Built on open and removed on close. Toggle:
+  left out. Typing "version" shows zen-custom's version and install date
+  (Sine's mods.json entry, written by install.ps1) and Zen's version and
+  build date, plus the newest of each from GitHub (fetched only when those
+  rows show, cached 10 min). Built on open and removed on close. Toggle:
   `zen-custom.shortcut-guide`.
