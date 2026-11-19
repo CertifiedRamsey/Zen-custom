@@ -300,7 +300,7 @@
     #zc-keys-guide .row .mine { margin-left: 6px; font-size: 11px; color: var(--zen-primary-color, #5b6cff); }
     #zc-keys-guide .keys { flex: none; display: flex; gap: 4px; }
     #zc-keys-guide kbd { font: 600 11.5px/1 system-ui, sans-serif; min-width: 20px; text-align: center;
-      padding: 4px 6px; border-radius: 5px; color: inherit; background: light-dark(#f3f3f5, #2f2f35);
+      padding: 4px 6px; border-radius: 5px; color: inherit; background: light-dark(#fff, #2f2f35);
       border: 1px solid light-dark(rgba(0,0,0,.1), rgba(255,255,255,.1)); border-bottom-width: 2px; }
     #zc-keys-guide [hidden] { display: none !important; }
     #zc-keys-guide .empty { padding: 28px 8px; text-align: center; color: light-dark(#8a8a90, #8c8c94); }
@@ -310,6 +310,9 @@
     #zc-keys-guide { color-scheme: light; }
     @media -moz-pref("zen.view.window.scheme", 0) { #zc-keys-guide { color-scheme: dark; } }
     @media -moz-pref("zen.view.window.scheme", 2) and (-moz-system-dark-theme) { #zc-keys-guide { color-scheme: dark; } }
+    /* ...and as dark or light as the sidebar when a space's colours make Zen switch */
+    :root[zen-should-be-dark-mode="true"] #zc-keys-guide { color-scheme: dark; }
+    :root[zen-should-be-dark-mode="false"] #zc-keys-guide { color-scheme: light; }
     :root[privatebrowsingmode="temporary"] #zc-keys-guide { color-scheme: dark; }
     @keyframes zcKeysFade { from { opacity: 0; } }
     @keyframes zcKeysPop { from { opacity: 0; transform: translateY(-6px) scale(.985); } }
