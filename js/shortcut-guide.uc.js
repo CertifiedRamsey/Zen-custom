@@ -420,10 +420,19 @@
       ["Spaces and containers", "Containers (edit, reorder, delete)", "containers manage edit settings", { ok: () => containersOn() && !!zenSettings(), run: () => zenSettings().open("containers") }],
       ["Spaces and containers", "New container", "new container create add", { ok: () => containersOn() && !!zenSettings(), run: newContainer }],
     ];
-    for (const c of myContainers()) {
+    const emoji = window.zcContainerEmoji; // container-emoji.uc.js, when on
+    const containers = myContainers();
+    for (const c of containers) {
       items.push(["Spaces and containers", `New tab in ${c.name} container`, `container tab new ${c.name}`,
         { ok: always, run: () => openTrustedLinkIn(BROWSER_NEW_TAB_URL, "tab", { userContextId: c.id }),
-          pick: `${c.name} container` }]); // Enter picks it for its name, not for "tab"
+          pick: `${c.name} container`, // Enter picks it for its name, not for "tab"
+          icon: emoji?.get(c.id) }]);
+    }
+    if (emoji && window.gZenEmojiPicker && Services.prefs.getBoolPref("zen-custom.container-emoji", true)) {
+      for (const c of containers) {
+        items.push(["Spaces and containers", `Container emoji: ${c.name}`, `emoji icon container ${c.name}`,
+          { ok: always, run: () => emoji.pick(c.id), pick: `emoji icon ${c.name}`, icon: emoji.get(c.id) }]);
+      }
     }
     return items.filter(([, , , how]) => {
       try { return how.ok(); } catch { return false; }
@@ -464,9 +473,11 @@
     #zc-keys-guide .row { display: flex; align-items: center; justify-content: space-between; gap: 16px;
       padding: 6px 8px; border-radius: 7px; box-sizing: border-box; min-height: 30px; }
     #zc-keys-guide .row:hover { background: light-dark(rgba(0,0,0,.04), rgba(255,255,255,.05)); }
-    #zc-keys-guide .row .t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #zc-keys-guide .row .t { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     #zc-keys-guide .row .mine { margin-left: 6px; font-size: 11px; color: var(--zen-primary-color, #5b6cff); }
     #zc-keys-guide .act { cursor: pointer; }
+    #zc-keys-guide .row .ico { flex: none; width: 16px; height: 16px; margin-right: -8px;
+      -moz-context-properties: fill; fill: currentColor; }
     #zc-keys-guide .act.sel { background: light-dark(rgba(0,0,0,.06), rgba(255,255,255,.08)); }
     #zc-keys-guide .go { display: none; flex: none; font-size: 12px; color: light-dark(#8a8a90, #8c8c94); }
     #zc-keys-guide .act.sel .go { display: inline; }
@@ -552,7 +563,7 @@
       for (const [label, title, also, how] of openItems()) {
         let sec = sections.find(s => s.label === label);
         if (!sec) sections.push(sec = { label, keys: [] });
-        sec.keys.push({ title, also, run: how.run, confirm: how.confirm, pick: how.pick, shortcut: how.key ? readKey(how.key) : null });
+        sec.keys.push({ title, also, run: how.run, confirm: how.confirm, pick: how.pick, icon: how.icon, shortcut: how.key ? readKey(how.key) : null });
       }
       sections.push({ label: "zen-custom", keys: ourShortcuts(), mine: true });
       const zia = ziaShortcuts();
@@ -630,6 +641,12 @@
       for (const k of s.keys) {
         const row = el("div", "row");
         const t = el("span", "t", k.title);
+        if (k.icon) {
+          const img = el("img", "ico");
+          img.src = k.icon;
+          img.alt = "";
+          row.append(img);
+        }
         if (k.isCustomized) t.append(el("span", "mine", "changed"));
         row.append(t);
         if (k.shortcut) row.append(keycaps(k.shortcut));

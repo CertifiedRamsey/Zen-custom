@@ -70,7 +70,7 @@ $sineHere = (Test-Path $sineMods) -or (Test-Path (Join-Path (Join-Path $chrome "
 $scriptsReady = $false
 if ($scripts.Count -and -not $sineHere) {
   Write-Host "Sine isn't installed in this profile, so the script features (Routes, Tab Monitor, Ctrl+Tab," -ForegroundColor Yellow
-  Write-Host "Folder style, PDF night mode, Space keys, Shortcut guide, Fake terminal) can't run" -ForegroundColor Yellow
+  Write-Host "Folder style, PDF night mode, Space keys, Shortcut guide, Fake terminal, Container emoji) can't run" -ForegroundColor Yellow
   Write-Host "(everything else works). Install Sine, then run this installer again." -ForegroundColor Yellow
 } elseif ($scripts.Count) {
   try {
@@ -92,7 +92,7 @@ if ($scripts.Count -and -not $sineHere) {
     $entry = [ordered]@{
       id           = "zen-custom"
       name         = "zen-custom"
-      description  = "Routes, Tab Monitor, Ctrl+Tab switcher, Folder style, PDF night mode, Space keys, Shortcut guide and Fake terminal from the zen-custom repo. Its installer keeps this up to date."
+      description  = "Routes, Tab Monitor, Ctrl+Tab switcher, Folder style, PDF night mode, Space keys, Shortcut guide, Fake terminal and Container emoji from the zen-custom repo. Its installer keeps this up to date."
       version      = $version
       updatedAt    = (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", [Globalization.CultureInfo]::InvariantCulture)
       scripts      = $entryScripts
@@ -126,7 +126,7 @@ foreach ($line in [IO.File]::ReadAllLines((Join-Path $repo "user.js"), [Text.Enc
 # "Enable installing JS from unofficial sources" (sine.allow-unsafe-js) is on.
 if ($scriptsReady -and $prefsText -notmatch 'user_pref\("sine\.allow-unsafe-js",\s*true\)') {
   Write-Host ""
-  Write-Host "Routes, Tab Monitor, Ctrl+Tab, Folder style, PDF night mode, Space keys, Shortcut guide and Fake terminal are scripts. Sine only"
+  Write-Host "Routes, Tab Monitor, Ctrl+Tab, Folder style, PDF night mode, Space keys, Shortcut guide, Fake terminal and Container emoji are scripts. Sine only"
   Write-Host "runs scripts that don't come from its own store when its setting"
   Write-Host "'Enable installing JS from unofficial sources' is on."
   Write-Host "These are your own scripts from this repo."

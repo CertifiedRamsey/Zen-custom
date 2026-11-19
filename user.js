@@ -41,4 +41,5 @@ user_pref("zen-custom.space-keys.flash", true);
 user_pref("zen-custom.space-keys.badges", true);
 user_pref("zen-custom.space-keys.send", true);
 user_pref("zen-custom.shortcut-guide", true);
+user_pref("zen-custom.container-emoji", true);
 user_pref("zen-custom.fake-terminal", true);
