@@ -19,7 +19,7 @@ if (-not (Test-Path $prefsJs)) { throw "There's no prefs.js in $ProfilePath" }
 # languages, bookmarks bar). Left out: things Zen keeps track of by itself
 # (update and migration markers, history, which space is open).
 $include = '^(zia\.|zen-custom\.|mod\.forkedtidypopup\.|librarytweaks-|zen\.)|^(sine\.allow-unsafe-js|sine\.auto-updates|browser\.tabs\.inTitlebar|browser\.tabs\.loadInBackground|browser\.toolbars\.bookmarks\.visibility|browser\.uiCustomization\.state|intl\.accept_languages|intl\.locale\.requested|intl\.regional_prefs\.use_os_locales|layout\.spellcheckDefault|sidebar\.visibility)$'
-$exclude = '^zen\.(keyboard\.shortcuts\.version|library\.history\.|library\.migrated|mods\.|session-store\.|spaces-sync\.first-sync|ui\.migration\.|updates\.|urlbar\.suggestions-learner|workspaces\.active)'
+$exclude = '^zen-custom\.container-emoji\.icons$|^zen\.(keyboard\.shortcuts\.version|library\.history\.|library\.migrated|mods\.|session-store\.|spaces-sync\.first-sync|ui\.migration\.|updates\.|urlbar\.suggestions-learner|workspaces\.active)'
 
 $out = @(
   "// Settings copied from Zen on $env:COMPUTERNAME on $(Get-Date -Format 'yyyy-MM-dd') by setup\capture-settings.ps1.",

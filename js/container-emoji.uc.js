@@ -36,9 +36,12 @@
       return {};
     }
   }
-  // only pictures Zen's picker makes: its emoji SVGs and its own icon files
+  // only pictures Zen's picker makes: its emoji SVGs, its own icon files,
+  // and the icons Zia adds to it (Zia's "Zia" tab in the picker)
   const safe = url => typeof url === "string" &&
-    (/^data:image\/svg\+xml;base64,[A-Za-z0-9+/=]+$/.test(url) || /^chrome:\/\/browser\/skin\/zen-icons\/[\w/.-]+\.svg$/.test(url));
+    (/^data:image\/svg\+xml;base64,[A-Za-z0-9+/=]+$/.test(url) ||
+      /^chrome:\/\/browser\/skin\/zen-icons\/[\w/.-]+\.svg$/.test(url) ||
+      /^resource:\/\/zia-(tabler|own-icons)\/[\w/.-]+\.svg$/.test(url));
 
   let style = null;
   function paint() {
@@ -82,7 +85,7 @@
     holder.append(anchor);
     document.documentElement.append(holder);
     try {
-      const chosen = picker.open(anchor, { emojiAsSVG: true, allowNone: true });
+      const chosen = picker.open(anchor, { emojiAsSVG: true, allowNone: !!window.zcContainerEmoji.get(userContextId) });
       if (!chosen) return; // the picker is already open somewhere
       let url;
       try {
