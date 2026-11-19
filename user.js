@@ -40,3 +40,4 @@ user_pref("zen-custom.space-keys", true);
 user_pref("zen-custom.space-keys.flash", true);
 user_pref("zen-custom.space-keys.badges", true);
 user_pref("zen-custom.space-keys.send", true);
+user_pref("zen-custom.shortcut-guide", true);

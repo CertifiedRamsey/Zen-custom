@@ -48,6 +48,7 @@ Each one can be switched off live in `about:config`:
 | `zen-custom.space-keys.flash` | After a keyboard space switch, the space's name shows for a moment at the top of the window (JS) | on |
 | `zen-custom.space-keys.badges` | Hold Alt and each space icon at the bottom of the sidebar shows its number (JS + CSS; off while Zia's tab numbers use Alt) | on |
 | `zen-custom.space-keys.send` | Alt+Shift+1 to 9 (0 = space 10) moves the tab you're on, or the selected tabs, to that space and goes with it (JS) | on |
+| `zen-custom.shortcut-guide` | Ctrl+, opens a searchable list of every shortcut: zen-custom's, Zia's (only the ones switched on), your add-ons', Zen's and Firefox's menu shortcuts, read live so changes in about:keyboard show up. Esc closes (JS, runs through Sine) | on |
 
 Colors, radius and spacing live in `chrome/zen-custom/modules/tokens.css`.
 

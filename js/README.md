@@ -49,3 +49,11 @@ installer asks.
   (`.badges`); Alt+Shift+number sends the tab you're on, or the selected
   tabs, to that space (`.send`). Essentials stay put, as with Zen's own Move
   to space.
+- `shortcut-guide.uc.js`: Ctrl+, opens a searchable panel of every
+  shortcut. Zen's own (from a copy of Zen's about:keyboard groups) and
+  Firefox's menu shortcuts are read key by key with their current binding,
+  avoiding Zen's full-list call, which would load DevTools. Add-ons' come
+  from the add-ons you have on. Zia's and zen-custom's own come from short
+  lists in the script, each shown only while its feature is on (keep them
+  in step when those shortcuts change). Built on open and removed on close. Toggle:
+  `zen-custom.shortcut-guide`.
