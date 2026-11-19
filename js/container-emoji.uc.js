@@ -93,21 +93,27 @@
       if (url && !safe(url)) throw new Error("Zen's picker gave back an icon this can't show");
       save(String(userContextId), url || null);
     } finally {
-      holder.remove();
+      // the picker fades out after answering; keep its anchor until it's gone
+      const panel = document.getElementById("PanelUI-zen-emojis-picker");
+      if (panel && panel.state !== "closed") panel.addEventListener("popuphidden", () => holder.remove(), { once: true });
+      else holder.remove();
+      setTimeout(() => holder.remove(), 5000);
     }
   }
 
   window.zcContainerEmoji = {
-    get: id => (enabled() ? readIcons()[String(id)] : null) || null,
+    get: id => {
+      const url = readIcons()[String(id)];
+      return enabled() && safe(url) ? url : null;
+    },
     pick,
   };
 
   paint();
-  const observer = { observe: paint };
-  Services.prefs.addObserver(ICONS_PREF, observer);
+  // (prefs observers match by prefix, so ON_PREF also sees ICONS_PREF)
+  const observer = { observe: (subject, topic, name) => { if (name === ICONS_PREF || name === ON_PREF) paint(); } };
   Services.prefs.addObserver(ON_PREF, observer);
   window.addEventListener("unload", () => {
-    Services.prefs.removeObserver(ICONS_PREF, observer);
     Services.prefs.removeObserver(ON_PREF, observer);
   }, { once: true });
 })();
